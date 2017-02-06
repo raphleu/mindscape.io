@@ -4,7 +4,7 @@
   "description": "organize and share your notes!",
   "main": "server.js",
   "dependencies": {
-    "bcrypt": "^1.0.1",
+    "bcryptjs": "^2.4.0",
     "body-parser": "^1.4.3",
     "draft-js": "^0.9.1",
     "es6-promise": "^4.0.5",
