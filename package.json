@@ -20,7 +20,6 @@
     "react-router": "^2.8.1",
     "react-router-redux": "^4.0.7",
     "redux": "^3.6.0",
-    "redux-auth": "0.0.5-beta5",
     "redux-logger": "^2.7.4",
     "redux-thunk": "^2.1.0",
     "rxjs-es": "^5.0.0-beta.12",
@@ -66,8 +65,5 @@
     "url": "https://github.com/sweetPete/mindscape.io/issues"
   },
   "homepage": "https://github.com/sweetPete/mindscape.io",
-  "engines": {
-    "node": "0.12.x"
-  },
   "license": "ISC"
 }
