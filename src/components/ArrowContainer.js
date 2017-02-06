@@ -28,6 +28,19 @@ export class Arrow extends React.Component<IArrowProps, IArrowState> { //Arrow!
     }
     return pts;
   }
+             /*<svg className='space-svg' width={radius} height={radius}>
+            <defs>
+              <marker id='DEFINE'>
+                <polyline points='0,0 3,3 0,6' stroke='steelblue' fill='none'/>
+              </marker>
+              <marker id='PRESENT'>
+                <polyline points='0,0 3,3 0,6' stroke='darkturquoise' fill='none'/>
+              </marker>
+              <marker id='EQUATE'>
+                <polyline points='0,0 0,6' stroke='darckorchid' fill='none'/>
+              </marker>
+            </defs>
+          </svg>*/
   render() {
     return null;
     const {relationship, source, source_read, target, target_read } = this.props;

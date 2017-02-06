@@ -26,10 +26,6 @@ import { App } from './components/App';
           Space
             Note...
       User...
-
-
-
-
 */
 
 const logger = store => next => action => {

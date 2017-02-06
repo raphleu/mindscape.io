@@ -3,7 +3,8 @@ import { connect } from 'react-redux';
 
 import { initialize } from '../actions';
 
-import { DashboardContainer } from './DashboardContainer';
+import { AuthContainer } from './AuthContainer';
+import { CurrentContainer } from './CurrentContainer';
 import { ReadContainer } from './ReadContainer';
 
 export class Notation extends React.Component {
@@ -12,58 +13,105 @@ export class Notation extends React.Component {
   }
 
   componentDidMount() {
-    const { user_ids } = this.props;
-
-    this.props.initialize(user_ids);
+    this.props.initialize();
   }
 
   render() {
-    const { user_ids, node_by_id } = this.props;
-
-    const frame_reads = user_ids.map(user_id => {
-      const user = node_by_id[user_id];
-      if (user) {
-        return (
-          <ReadContainer 
-            key={'read-'+user.frame_read_id}
-            read_id={user.frame_read_id}
-          />
-        );        
-      }
-    });
+    const { fetching, frame_reads } = this.props;
 
     const style = {
-      notation: {
+      main: {
         display: 'block',
         whiteSpace: 'nowrap',
       },
+      dashboard: {
+        display: 'inline-block',
+        verticalAlign: 'top',
+        position: 'fixed',
+        margin: 2,
+        border: '1px solid steelblue',
+        borderTopLeftRadius: 4,
+        borderBottomRightRadius: 4,
+        width: 160,
+      },
+      dashboard_liner: {
+        border: '1px solid azure',
+        borderTopLeftRadius: 4,
+        borderBottomRightRadius: 4,
+      },
+      indicators: {
+        margin: 2,
+        borderTopLeftRadius: 2,
+        padding: 4,
+        backgroundColor: 'white'
+      },
+      spacer: {
+        display: 'inline-block',
+        width: 164,
+      },
+      frames: {
+        display: 'inline-block',
+      }
     };
 
+    const indicators = (
+      <div style={style.indicators}>
+        {fetching ? '   ^_< ...fetching!' : '   ^_^ ...ready!'}
+      </div>
+    );
+
+    const reads = frame_reads.map(frame_read => {
+      const path = [frame_read];
+      return (
+        <ReadContainer key={'read-'+path[0].id} path={path} />
+      );
+    });
+    // TODO add current_read info to dashboard
     return (
-      <div className='notation' style={ style.notation }>
-        <DashboardContainer />
-        { frame_reads }
+      <div className='notation' style={ style.main }>
+        <div style={style.dashboard}>
+          <div style={style.dashboard_liner}>
+            {indicators}
+            <AuthContainer />
+            /*<CurrentContainer />*/
+          </div>
+        </div>
+        <div style={style.spacer}></div>
+        <div style={style.frames}>
+          {reads}
+        </div>
       </div>
     );
   }
 }
 
 Notation.propTypes = {
-  node_by_id: PropTypes.object,
-  user_ids: PropTypes.arrayOf(PropTypes.number),
+  fetching: PropTypes.bool,
+  frame_reads: PropTypes.arrayOf(PropTypes.object),
 };
 
 function getStateProps(state) {
+  const frame_reads = state.user_ids.reduce((frame_reads, user_id) => {
+    const user = state.node_by_id[user_id];
+    if (user == null) {
+      return frame_reads;
+    }
+    else {
+      const frame_read = state.relationship_by_id[user.frame_read_id];
+      return [...frame_reads, frame_read];
+    }
+  }, []);
+
   return {
-    node_by_id: state.node_by_id,
-    user_ids: state.user_ids,
+    fetching: state.fetching_state,
+    frame_reads,
   };
 }
 
 function getDispatchProps(dispatch) {
   return {
-    initialize: (user_ids) => {
-      dispatch(initialize(user_ids));
+    initialize: () => {
+      dispatch(initialize());
     },
   }
 }

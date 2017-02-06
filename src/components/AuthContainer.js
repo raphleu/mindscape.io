@@ -1,7 +1,7 @@
 import React, { PropTypes } from 'react';
 import { connect } from 'react-redux';
 
-import { User } from './User';
+import { AuthUser } from './AuthUser';
 
 class Auth extends React.Component {
   constructor(props) {
@@ -26,11 +26,13 @@ class Auth extends React.Component {
     const { active } = this.state;
 
     const style = {
-      auth: {
+      main: {
         display: 'inline-block',
         position: 'relative',
-        border: '2px solid lavender',
+        margin: 2,
+        marginTop: 0,
         padding: 4,
+        backgroundColor: 'white',
       },
       accessor: {
         cursor: 'pointer',
@@ -49,7 +51,7 @@ class Auth extends React.Component {
       }
       else {
         return (
-          <User 
+          <AuthUser 
             key={'user-'+user_id}
             user={user}
           />
@@ -58,7 +60,7 @@ class Auth extends React.Component {
     });
 
     return (
-      <div className='auth' style={style.auth}>
+      <div className='auth' style={style.main}>
          <div style={style.accessor} onClick={this.toggleActivation}>
            auth
          </div>

@@ -1,5 +1,5 @@
 
-const { PositionModes, DisplayModes, SequenceDirections } = require('../src/types.js');
+const { Displays, Directions, Positions } = require('../src/types.js');
 
 module.exports = state;
 
@@ -90,13 +90,14 @@ function state(util) {
       },
       read_props: {
         super_read_id: null,
-        position_mode: PositionModes.SEQUENCE,
+        position: Positions.DOCK,
         x: 0,
         y: 0,
-        display_mode: DisplayModes.PLANE,
-        plane_radius: 800,
+        display: Displays.PLANE,
+        portal_radius: 800,
+        radius: 1600,
         sub_read_ids: [],
-        sequence_direction: SequenceDirections.DOWN,
+        direction: Directions.DOWN,
       },
     };
     const query = `

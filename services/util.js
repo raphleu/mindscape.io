@@ -26,7 +26,7 @@ module.exports = function(seraph_instance) {
   }
 
   function query(query, params, verbose = false) {
-    return new Promise((resolve, reject) => {
+    return new Promise((accept, reject) => {
       if (verbose) {
         console.log('query start', query, params);
       }
@@ -38,7 +38,7 @@ module.exports = function(seraph_instance) {
           reject(err)
         }
         else {
-          resolve(results);
+          accept(results);
         }
       });
     });
@@ -54,7 +54,7 @@ module.exports = function(seraph_instance) {
   }
 
   function encodeToken(author) {
-    return new Promise((resolve, reject) => {
+    return new Promise((accept, reject) => {
       const payload = {
         author: author,
         time: Date.now(),
@@ -69,14 +69,14 @@ module.exports = function(seraph_instance) {
           reject(err);
         }
         else {
-          resolve(token);
+          accept(token);
         }
       });
     });
   }
 
   function decodeToken(token, verbose = false) {
-    return new Promise((resolve, reject) => {
+    return new Promise((accept, reject) => {
       const options = {};
 
       jwt.verify(token, jwt_secret, options, (err, payload) => {
@@ -85,7 +85,7 @@ module.exports = function(seraph_instance) {
             console.log('token not decoded:\n', token, '\n', payload ,'\n', err && err.message);
           }
 
-          resolve({
+          accept({
             token,
           })
         }
@@ -94,7 +94,7 @@ module.exports = function(seraph_instance) {
             console.log('token decoded:\n', token, '\n', payload);
           }
 
-          resolve({
+          accept({
             token,
             payload,
           });

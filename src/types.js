@@ -1,30 +1,35 @@
 module.exports = (function() {
-  const PositionModes = {
-    SEQUENCE: 'SEQUENCE',
-    SCATTERPLOT: 'SCATTERPLOT',
-  };
-
-  const DisplayModes = {
-    MIN: 'MIN',
-    BASIC: 'BASIC',
+  const Displays = {
+    POINT: 'POINT',
+    HEADER: 'HEADER',
+    POSITION: 'POSITION',
+    MOMENTUM: 'MOMENTUM',
     SEQUENCE: 'SEQUENCE',
     PLANE: 'PLANE',
   };
 
-  const SequenceDirections = {
+  const Directions = {
+    UP: 'UP',
     DOWN: 'DOWN',
+    LEFT: 'LEFT',
     RIGHT: 'RIGHT',
   };
 
+  const Positions = {
+    DOCK: 'DOCK',
+    DRIFT: 'DRIFT',
+  };
+  
   const DragTypes = {
-    NOTE: 'NOTE',
+    READ: 'READ',
   };
 
+
   return  {
-    PositionModes,
-    DisplayModes,
-    SequenceDirections,
-    DragTypes
+    Displays,
+    Directions,
+    Positions,
+    DragTypes,
   };
 })();
 

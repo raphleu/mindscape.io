@@ -20,7 +20,6 @@ class MainComponent extends React.Component {
         borderBottomLeftRadius: 4,
         width: '100%',
         backgroundColor: 'white',
-        color: 'steelblue',
         verticalAlign: 'middle',
       },
       logo: {
@@ -30,21 +29,27 @@ class MainComponent extends React.Component {
         borderBottom: 'none',
         borderTopRightRadius: 4,
         borderBottomLeftRadius: 4,
-        padding: 4,
-        //height: 20,
-        backgroundColor: 'azure',
-        color: 'steelblue',
+      },
+      logo_liner: {
+        borderTopRightRadius: 4,
+        borderBottomLeftRadius: 4,
+        border: '1px solid azure',
+        padding: 6,
+        //backgroundColor: 'white',  
       },
       spacer: {
-        height: 30,
+        height: 31,
       },
     };
 
+    // TODO add other nav options to header?
     return (
       <div id='main'>
-        <div id='header' style={style.header}>
+        <div style={style.header}>
           <div className='logo' style={style.logo}>
-            mindscape.io
+            <div style={style.logo_liner}>
+              mindscape.io
+            </div>
           </div>
         </div>
         <div className='spacer' style={style.spacer}></div>

@@ -32,7 +32,7 @@ function read(util) {
     return util.query(query, params)
       .then(reads => {
         return {
-          relationship_by_id: reads.reduce(util.assignById, {})
+          relationship_by_id: reads.reduce(util.assignById, {}),
         };
       });
   }
