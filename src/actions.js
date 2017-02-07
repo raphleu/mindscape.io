@@ -6,24 +6,39 @@ export const FETCH_STATE_REQUEST = 'FETCH_STATE_REQUEST';
 export const FETCH_STATE_SUCCESS = 'FETCH_STATE_SUCCESS';
 export const FETCH_STATE_FAILURE = 'FETCH_STATE_FAILURE';
 
-export const SET_RELATIONSHIPS = 'SET_RELATIONSHIPS';
+export const SET_INTERIM_NODES = 'SET_INTERIM_NODES';
+export const SET_INTERIM_RELATIONSHIPS = 'SET_INTERIM_RELATIONSHIPS';
 
 export const SET_CURRENT_READ_ID = 'SET_CURRENT_READ_ID';
-
-export const EDIT_FRAME_NODE_IDS = 'EDIT_FRAME_NODE_IDS';
+export const SET_FRAME_READ_ID = 'SET_FRAME_READ_ID';
 
 const initialize_url = '/api/state/initialize';
+const state_url = 'api/state';
 const author_url = '/api/author';
 const read_url = '/api/read';
 
-
-export function initialize(user_ids) {
+export function initialize() {
   return dispatch => {
-    const params = {
-      user_ids
-    };
-    return fetchState(dispatch, params, initialize_url);
+    return fetchState(dispatch, {}, initialize_url);
   };
+}
+
+export function setState(params) {
+  const { authors, notes, reads, writes, links } = params;
+
+  return dispatch => {
+    const nodes = [...(authors || []), ...(notes || [])];
+    if (nodes.length > 0) {
+      dispatch(setInterimNodes(nodes));
+    }
+
+    const relationships = [...(reads || []), ...(writes || []), ...(links || [])];
+    if (relationships.length > 0) {
+      dispatch(setInterimRelationships(relationships));
+    }
+
+    fetchState(dispatch, params, state_url)
+  }
 }
 
 function fetchState(dispatch, params, url) {
@@ -39,7 +54,6 @@ function fetchState(dispatch, params, url) {
       .then(json => {
         if (response.ok) { 
           dispatch(fetchStateSuccess(json.data, url));
-
 
           setLocalState(json.data);
         }
@@ -84,51 +98,23 @@ function fetchStateFailure(error, url) {
   };
 }
 
-export function logOut(user) {
-  
-}
 
-export function setAuthor(token, author) {
-  return dispatch => {
-    const params = {
-      token,
-      author,
-    };
-    return fetchState(dispatch, params, author_url);
+function setInterimNodes(nodes) {
+  return {
+    type: SET_INTERIM_NODES,
+    payload: {
+      nodes,
+    },
   };
 }
 
-export function setReads(reads) {
-  return dispatch => {
-    dispatch(setRelationships(reads));
-
-    const params = {
-      reads,
-    };
-    return fetchState(dispatch, params, read_url);
-  }
-}
-
-function setRelationships(relationships) {
-  console.log('setRelationships', relationships);
+function setInterimRelationships(relationships) {
   return {
-    type: SET_RELATIONSHIPS,
+    type: SET_INTERIM_RELATIONSHIPS,
     payload: {
       relationships,
     },
   };
 }
 
-export function addNote(position_text, super_read_id) {
 
-}
-
-export function setCurrentReadId(user_id, read_id) {
-  return {
-    type: SET_CURRENT_READ_ID,
-    payload: {
-      user_id,
-      read_id,
-    },
-  };
-}

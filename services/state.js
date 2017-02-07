@@ -6,6 +6,8 @@ module.exports = state;
 function state(util) {
   return {
     getState,
+    setAuthors,
+    setReads,
   };
 
   function getState(token_by_id) {
@@ -123,41 +125,12 @@ function state(util) {
       .then(results => results[0].author);
   }
 
-  function getUserReadNotes(author_ids) {
-    console.log('getUserReadNotes');
-    const params = {
-      author_ids,
-    };
-    const query = `
-      MATCH
-        (user:Author)<-[:READ]-(note:Note)<-[write:WRITE]-(:Author)
-      WHERE
-        id(user) IN {author_ids}
-      MATCH
-        (note)-[read:READ]->(:Author)
-      OPTIONAL MATCH
-        (note)<-[link:LINK]-(:Note)
-      WITH
-        collect(DISTINCT user) AS users,
-        note,
-        write,
-        collect(read) AS reads,
-        collect(link) AS links
-      RETURN
-        users,
-        collect({
-          node: note,
-          write: write,
-          reads: reads,
-          links: links
-        }) AS units      
-    `;
-
-    return util.query(query, params)
-      .then(results => {
-        console.log(results);
-        return results[0]
-      });
+  function getBonusNoteIds() {
+    console.log('getBonusNoteIds');
+    return Promise.resolve([
+      12, /* current time note id */
+      33, /* current space note id */ 
+    ]);
   }
 
   function addUserReadNotes(author_ids, note_ids) {
@@ -192,12 +165,103 @@ function state(util) {
     return util.query(query, params);
   }
 
-  function getBonusNoteIds() {
-    console.log('getBonusNoteIds');
-    return Promise.resolve([
-      12, /* current time note id */
-      33, /* current space note id */ 
-    ]);
+  function getUserReadNotes(author_ids) {
+    console.log('getUserReadNotes');
+    const params = {
+      author_ids,
+    };
+    const query = `
+      MATCH
+        (user:Author)<-[:READ]-(note:Note)<-[write:WRITE]-(:Author)
+      WHERE
+        id(user) IN {author_ids}
+      MATCH
+        (note)-[read:READ]->(:Author)
+      WITH
+        collect(DISTINCT user) AS users,
+        note,
+        write,
+        collect(read) AS reads
+      OPTIONAL MATCH
+        (note)-[link:LINK]-(:Note)
+      WITH
+        users,
+        note,
+        write,
+        reads,
+        collect(link) AS links
+      RETURN
+        users,
+        collect({
+          node: note,
+          write: write,
+          reads: reads,
+          links: links
+        }) AS units      
+    `;
+
+    return util.query(query, params)
+      .then(results => {
+        console.log(results);
+        return results[0]
+      });
+  }
+
+  function setAuthors(authors) {
+    if (authors.length === 0) {
+      return Promise.resolve({});
+    }
+    console.log('setAuthors');
+    const params = {
+      authors
+    };
+    const query = `
+      UNWIND
+        {authors} AS author2
+      MATCH
+        (author:Author)
+      WHERE
+        id(author) = author2.id
+      SET
+        author += author2
+      RETURN
+        author
+    `;
+    return util.query(query, params)
+      .then(authors => authors.reduce(util.assignById, {}));
+  }
+
+  function setReads(reads) {
+    if (reads.length === 0) {
+      return Promise.resolve({});
+    }
+    console.log('setReads');
+    const params = {
+      reads,
+    };
+    const query = `
+      UNWIND
+        {reads} as read2
+      MATCH 
+        (user:Author)<-[read:READ]-(note:Note)
+      WHERE
+        id(read) = read2.id
+      OPTIONAL MATCH
+        (user)-[write:WRITE]->(note)
+      SET
+        read += read2.properties,
+        read.final_time = timestamp(),
+        write += read2.properties,
+        write.final_time = timestamp()
+      RETURN
+        read
+    `;
+    return util.query(query, params)
+      .then(reads => {
+        return {
+          relationship_by_id: reads.reduce(util.assignById, {}),
+        };
+      });
   }
 }
   

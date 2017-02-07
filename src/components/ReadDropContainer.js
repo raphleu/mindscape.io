@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 
 import { Displays, Positions, DragTypes } from '../types';
 
-import { setReads } from '../actions';
+import { setState } from '../actions';
 
 import { flow } from 'lodash';
 
@@ -39,7 +39,7 @@ ReadDrop.propTypes = {
   item_position: PropTypes.string,
   style: PropTypes.object,
   // dispatch 
-  setReads: PropTypes.func,
+  setState: PropTypes.func,
   // drag n drop
   is_over: PropTypes.bool,
   connectDropTarget: PropTypes.func,
@@ -47,8 +47,8 @@ ReadDrop.propTypes = {
 
 function getDispatchProps(dispatch) {
   return {
-    setReads: (reads) => {
-      dispatch(setReads(reads));
+    setState: (params) => {
+      dispatch(setState(params));
     },
   };
 }
@@ -82,7 +82,7 @@ const dropTarget = {
       return;
     }
 
-    const { path, depth, item_position, setReads } = props; // target props
+    const { path, depth, item_position, setState } = props; // target props
     const target_clientRect = findDOMNode(component).getBoundingClientRect();
 
     const item = monitor.getItem();
@@ -163,9 +163,11 @@ const dropTarget = {
     });
     reads.push(item_read);
 
-
     console.log('reads', reads);
-    setReads(reads);
+
+    setState({
+      reads
+    });
   },
 };
 

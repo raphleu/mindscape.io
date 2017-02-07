@@ -61,13 +61,25 @@ app.post('/api/state/initialize', (req, res) => {
     });
 });
 
-app.post('/api/read', (req, res) => {
+app.post('/api/state', (req, res) => {
   const { token_by_id } = req.headers;
-  const { reads } = req.body;
+  let { authors, reads } = req.body;
 
-  const filtered_reads = reads.filter(read => token_by_id[read.end]);
+  authors = (authors || []).filter(author => token_by_id[author.id]);
+  reads = (reads || []).filter(read => token_by_id[read.end]);
 
-  services.read.setReads(reads)
+  const updates = [
+    services.state.setAuthors(authors),
+    services.state.setReads(reads),
+  ];
+
+  Promise.all(updates)
+    .then(states => {
+      return states.reduce((object, item) => Object.assign({}, object, {
+        node_by_id: Object.assign({}, object.node_by_id, item.node_by_id),
+        relationship_by_id: Object.assign({}, object.relationship_by_id, item.relationship_by_id),
+      }), {});
+    })
     .then(state => {
       res.status(200).json({data: state});
     })
@@ -94,16 +106,7 @@ app.post('/api/state/logout', (req, res) => {
     services.state.getState(author.id, token, getCallback(res));
   }));
 });
-
-app.post('/api/author', (req, res) => {
-  const { token, author } = req.body;
-
-  services.author.setAuthor(token, author, getCallback(res)); // TODO rename to editAuthor?
-});
-
 */
-
-
 
 app.listen(app.get('port'), () => {
   console.log('Server started: http://localhost:' + app.get('port') + '/');

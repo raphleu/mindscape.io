@@ -32,7 +32,9 @@ export class Notation extends React.Component {
         border: '1px solid steelblue',
         borderTopLeftRadius: 4,
         borderBottomRightRadius: 4,
-        width: 160,
+        width: 200,
+        whiteSpace: 'normal',
+        overflow: 'auto',
       },
       dashboard_liner: {
         border: '1px solid azure',
@@ -47,7 +49,7 @@ export class Notation extends React.Component {
       },
       spacer: {
         display: 'inline-block',
-        width: 164,
+        width: 204,
       },
       frames: {
         display: 'inline-block',
@@ -56,7 +58,7 @@ export class Notation extends React.Component {
 
     const indicators = (
       <div style={style.indicators}>
-        {fetching ? '   ^_< ...fetching!' : '   ^_^ ...ready!'}
+        {fetching ? ' (^ _ <) ...fetching!' : ' (^ _ ^) ...ready!'}
       </div>
     );
 
@@ -73,7 +75,7 @@ export class Notation extends React.Component {
           <div style={style.dashboard_liner}>
             {indicators}
             <AuthContainer />
-            /*<CurrentContainer />*/
+            <CurrentContainer />
           </div>
         </div>
         <div style={style.spacer}></div>

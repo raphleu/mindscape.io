@@ -6,7 +6,6 @@ module.exports = (function() {
     getSuperReads,
   };
 
-
   function getLocalState() {
     const user_ids = JSON.parse(localStorage.getItem('user_ids')) || [];
 

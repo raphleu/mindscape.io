@@ -2,8 +2,6 @@
 import React, { PropTypes } from 'react';
 import { connect } from 'react-redux';
 
-import { setReads } from '../actions';
-
 import { Displays, Positions, DragTypes } from '../types';
 
 //import * as force from 'd3-force';

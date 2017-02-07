@@ -1,13 +1,19 @@
 import React, { PropTypes } from 'react';
 import { connect } from 'react-redux';
 
+import { Displays, Positions } from '../types';
+
 class Current extends React.Component {
   constructor(props) {
     super(props);
   }
 
   render() {
-    const { current_reads, path_by_id } = this.props;
+    const { user, path, note, write, reads, links } = this.props;
+
+    if (user == null) {
+      return null;
+    }
 
     const style = {
       main: {
@@ -19,61 +25,75 @@ class Current extends React.Component {
       },
     };
 
-    const current_components = current_reads.map(current_read => {
+    const position = (path[1] == null || path[1].properties.display === Displays.SEQUENCE)
+      ? Positions.DOCK
+      : path[0].properties.position;
 
-    })
     return (
       <div className='current' style={style.main}>
-
+        <div>
+          path: {path.map(read => read.id).join(' < ')}
+        </div>
+        <div>
+          position: {position}
+        </div>
+        <div>
+          display: {path[0].properties.display}
+        </div>
+        <div>
+          author_id: {write.start}
+        </div>
+        <div>
+          read_count: {reads.length}
+        </div>
+        <div>
+          links: [{links.map(link => link.id).join(', ')}]
+        </div>
       </div>
     );
-
   }
 }
 
 Current.propTypes = {
-  current_reads: PropTypes.arrayOf(PropTypes.object),
-  path_by_id: PropTypes.object,
-  note_by_id: PropTypes.object,
-  write_by_id: PropTypes.object,
-  reads_by_id: PropTypes.object,
-  links_by_id: PropTypes.object,
-}
+  user: PropTypes.object,
+  path: PropTypes.arrayOf(PropTypes.object),
+  note: PropTypes.object,
+  write: PropTypes.object,
+  reads: PropTypes.arrayOf(PropTypes.object),
+  links: PropTypes.arrayOf(PropTypes.object),
+};
 
 function getStateProps(state) {
-  const current_reads = state.current_read_ids.map(current_read_id => state.relationship_by_id[current_read_id]);
+  const user = state.node_by_id[state.user_ids[0]];
+  if (user == null) {
+    return {};
+  }
 
-  const path_by_id = {};
-  const note_by_id = {};
-  const write_by_id = {};
-  const reads_by_id = {};
-  const links_by_id = {};
+  const current_read = state.relationship_by_id[user.current_read_id];
+  if (current_read == null) {
+    return {};
+  }
 
-  const getPath = (path, read) => {
+  const path = (function getPath(path, read) {
     if (read == null) {
       return path;
     }
-    return getPath([...path, read], state.relationship_by_id[read.properties.super_read_id]);
-  }
+    const super_read = state.relationship_by_id[read.properties.super_read_id];
+    return getPath([...path, read], super_read);
+  })([], current_read);
 
-  current_reads.forEach(current_read => {
-    path_by_id[current_read.id] = getPath([], current_read);
-
-    const note = state.node_by_id[current_read.start];
-    note_by_id[current_read.id] = note;
-
-    write_by_id[current_read.id] = state.relationship_by_id[note.write_id];
-    reads_by_id[current_read.id] = note.read_ids.map(read_id => state.relationship_by_id[read_id]);
-    links_by_id[current_read.id] = note.link_ids.map(link_id => state.relationship_by_id[link_id]); 
-  });
+  const note = state.node_by_id[current_read.start];
+  const write = state.relationship_by_id[note.write_id];
+  const reads = note.read_ids.map(read_id => state.relationship_by_id[read_id]);
+  const links = note.link_ids.map(link_id => state.relationship_by_id[link_id]);
 
   return {
-    current_reads,
-    path_by_id,
-    note_by_id,
-    write_by_id,
-    reads_by_id,
-    links_by_id,
+    user,
+    path,
+    note,
+    write,
+    reads,
+    links,
   };
 }
 function getDispatchProps(dispatch) {

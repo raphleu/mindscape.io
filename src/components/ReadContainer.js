@@ -3,9 +3,8 @@ import { connect } from 'react-redux';
 
 import { Displays, Directions, Positions, DragTypes } from '../types';
 
-import { setCurrentReadId } from '../actions';
+import { setState } from '../actions';
 
-import { getSuperReads } from '../util';
 import { flow } from 'lodash';
 //import * as force from 'd3-force';
 
@@ -22,13 +21,45 @@ class Read extends React.Component { //Read
     super(props);
 
     this.handleClick = this.handleClick.bind(this);
+    this.handleDoubleClick = this.handleDoubleClick.bind(this);
   }
 
   handleClick(event) {
     event.stopPropagation();
-    const { path, user, setCurrentReadId } = this.props;
+    const { path, user, setState } = this.props;
 
-    setCurrentReadId(user.id, path[0].id);
+    const author = Object.assign({}, user, {
+      current_read_id: path[0].id,
+    });
+
+    setState({
+      authors: [author],
+    });
+  }
+
+  handleDoubleClick(event) {
+    event.stopPropagation();
+    const { path, user, setState } = this.props;
+
+    if (path[0].id !== user.root_read_id) {
+      const author = Object.assign({}, user, {
+        frame_read_id: (path[0].id === user.frame_read_id)
+          ? user.root_read_id
+          : path[0].id,
+      });
+      const read = Object.assign({}, path[0], {
+        properties: Object.assign({}, path[0].properties, {
+          display: (path[0].id === user.frame_read_id)
+            ? Displays.SEQUENCE
+            : Displays.PLANE,
+        }),
+      });
+
+      setState({
+        authors: [author],
+        reads: [read],
+      });
+    }
   }
 
   render() {
@@ -54,6 +85,8 @@ class Read extends React.Component { //Read
       ? Positions.DOCK
       : path[0].properties.position;
 
+    const display = is_frame ? Displays.PLANE : path[0].properties.display;
+
     const style = {
       main: {
         display: (direction === Directions.DOWN) ? 'block' : 'inline-block',
@@ -76,8 +109,8 @@ class Read extends React.Component { //Read
       },
       view_liner: {
         border: '2px solid azure',
-        borderTopRightRadius: 2,
-        borderBottomLeftRadius:2,
+        borderTopRightRadius: 4,
+        borderBottomLeftRadius: 4,
       },
       header: {
         position: 'relative',
@@ -142,7 +175,7 @@ class Read extends React.Component { //Read
       );
     }
     return connectDragPreview(
-      <div id={'read-'+path[0].id} style={style.main} onClick={this.handleClick}>
+      <div id={'read-'+path[0].id} style={style.main} onClick={this.handleClick} onDoubleClick={this.handleDoubleClick}>
         {view}
       </div>
     );
@@ -157,7 +190,7 @@ Read.propTypes = {
   note: PropTypes.object,
   user: PropTypes.object,
   // dispatch
-  setCurrentReadId: PropTypes.func,
+  setState: PropTypes.func,
   // drag n drop
   is_drag: PropTypes.bool,
   connectDragSource: PropTypes.func,
@@ -180,9 +213,9 @@ function getStateProps(state, ownProps) {
 function getDispatchProps(dispatch, ownProps) {
   // don't need to position children!
   return {
-    setCurrentReadId: (user_id, read_id) => {
-      dispatch(setCurrentReadId(user_id, read_id));
-    }
+    setState: (params) => {
+      dispatch(setState(params));
+    },
   };
 }
 
