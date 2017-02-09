@@ -44,6 +44,12 @@ app.use('/api/', (req, res, next) => {
     })
     .then(token_by_id => {
       req.headers.token_by_id = token_by_id;
+
+      const verbose = true;
+      if (verbose) {
+        console.log(req.headers);
+        console.log(req.body);
+      }
       next();
     });
 });
@@ -63,21 +69,23 @@ app.post('/api/state/initialize', (req, res) => {
 
 app.post('/api/state', (req, res) => {
   const { token_by_id } = req.headers;
-  let { authors, reads } = req.body;
+  let { authors, reads, notes } = req.body;
 
   authors = (authors || []).filter(author => token_by_id[author.id]);
   reads = (reads || []).filter(read => token_by_id[read.end]);
+  notes = (notes || []).filter(note => token_by_id[note.read.end]);
 
   const updates = [
     services.state.setAuthors(authors),
     services.state.setReads(reads),
+    services.state.setNotes(notes),
   ];
 
   Promise.all(updates)
     .then(states => {
-      return states.reduce((object, item) => Object.assign({}, object, {
-        node_by_id: Object.assign({}, object.node_by_id, item.node_by_id),
-        relationship_by_id: Object.assign({}, object.relationship_by_id, item.relationship_by_id),
+      return states.reduce((state, item) => Object.assign({}, state, {
+        node_by_id: Object.assign({}, state.node_by_id, item.node_by_id),
+        relationship_by_id: Object.assign({}, state.relationship_by_id, item.relationship_by_id),
       }), {});
     })
     .then(state => {
@@ -87,6 +95,23 @@ app.post('/api/state', (req, res) => {
       res.status(500).json({data: err.message});
     });
 });
+
+app.post('/api/write', (req, res) => {
+  const { token_by_id } = req.headers;
+  let { super_read } = req.body;
+
+  if (token_by_id[super_read.end] == null) {
+    res.status(500).json({data: 'Permission denied'});
+  }
+
+  services.state.addNote(super_read)
+    .then(state => {
+      res.status(200).json({data: state});
+    })
+    .catch(err => {
+      res.status(500).json({data: err.message});
+    });
+})
 
 /*
 app.post('/api/state/login', (req, res) => {

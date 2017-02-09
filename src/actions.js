@@ -1,48 +1,215 @@
 import fetch from 'isomorphic-fetch';
 
-import { getHeaders, setToken, setLocalState } from './util';
+import { Defaults, Displays, Relationships } from './types';
+import { getHeaders, setToken, setLocalState, assignById } from './util';
 
 export const FETCH_STATE_REQUEST = 'FETCH_STATE_REQUEST';
 export const FETCH_STATE_SUCCESS = 'FETCH_STATE_SUCCESS';
 export const FETCH_STATE_FAILURE = 'FETCH_STATE_FAILURE';
 
-export const SET_INTERIM_NODES = 'SET_INTERIM_NODES';
-export const SET_INTERIM_RELATIONSHIPS = 'SET_INTERIM_RELATIONSHIPS';
+export const SET_TEMP_STATE = 'SET_TEMP_STATE';
+export const RESOLVE_TEMP_STATE = 'RESOLVE_TEMP_STATE';
 
 export const SET_CURRENT_READ_ID = 'SET_CURRENT_READ_ID';
 export const SET_FRAME_READ_ID = 'SET_FRAME_READ_ID';
 
 const initialize_url = '/api/state/initialize';
 const state_url = 'api/state';
-const author_url = '/api/author';
-const read_url = '/api/read';
+const write_url = 'api/write';
 
 export function initialize() {
   return dispatch => {
-    return fetchState(dispatch, {}, initialize_url);
+    const comment = 'initialize';
+    return fetchState(dispatch, initialize_url, {}, comment);
+  };
+}
+export function moveNote(read, super_read, prev_super_read) {
+  return dispatch => {
+    const comment = 'moveNote';
+
+    const reads = [read];
+
+    if (super_read && prev_super_read) {
+      reads.push(super_read);
+      reads.push(prev_super_read);
+    }
+
+    dispatch(setTempState({
+      relationship_by_id: reads.reduce(assignById, {}),
+    }, comment));
+
+    fetchState(dispatch, state_url, {reads}, comment);
   };
 }
 
-export function setState(params) {
-  const { authors, notes, reads, writes, links } = params;
-
+export function currentNote(read, super_read, author) {
   return dispatch => {
-    const nodes = [...(authors || []), ...(notes || [])];
-    if (nodes.length > 0) {
-      dispatch(setInterimNodes(nodes));
+    const comment = 'currentNote';
+    if (read.id === author.current_read_id) {
+      return;
     }
 
-    const relationships = [...(reads || []), ...(writes || []), ...(links || [])];
-    if (relationships.length > 0) {
-      dispatch(setInterimRelationships(relationships));
+    const author2 = Object.assign({}, author, {
+      current_read_id: read.id,
+    });
+
+    dispatch(setTempState({
+      node_by_id: assignById({}, author2),
+      //relationship_by_id: assignById({}, super_read2),
+    }, comment));
+
+    /*
+    fetchState(dispatch, state_url, {
+      authors: [author2],
+      //reads: [super_read2],
+    }, comment);
+    */
+  };
+}
+
+export function frameNote(read, author) {
+  return dispatch => {
+    const comment = 'frameNote'
+    if (read.id === author.root_read_id) {
+      return;
     }
 
-    fetchState(dispatch, params, state_url)
+    const is_frame = (read.id === author.frame_read_id);
+
+    const author2 = Object.assign({}, author, {
+      frame_read_id: is_frame ? author.root_read_id : read.id,
+    });
+
+    const read2 = Object.assign({}, read, {
+      properties: Object.assign({}, read.properties, {
+        display: is_frame ? Displays.SEQUENCE : Displays.PLANE,
+      }),
+    });
+
+    dispatch(setTempState({
+      node_by_id: assignById({}, author2),
+      relationship_by_id: assignById({}, read2),
+    }, comment));
+
+    fetchState(dispatch, state_url, {
+      authors: [author2],
+      reads: [read2],
+    }, comment);
   }
 }
 
-function fetchState(dispatch, params, url) {
-  dispatch(fetchStateRequest(params, url));
+export function addNote(super_read, author) {
+  return dispatch => {
+    const comment = 'addNote';
+
+    // allocate temp_ids
+    let timestamp = Date.now();
+    const note_id = 'temp-' + timestamp;
+
+    timestamp++;
+    const write_id = 'temp-' + timestamp;
+
+    timestamp++;
+    const read_id = 'temp-' + timestamp;
+
+
+    dispatch(setTempState({
+      node_by_id: {
+        [author.id]: Object.assign({}, author, {
+          current_read_id: read_id,
+        }),
+        [note_id]: Object.assign({}, Defaults.Note, {
+          live: true,
+          id: note_id,
+          write_id: write_id,
+          read_ids: [read_id],
+          link_ids: [],
+        }),
+      },
+      relationship_by_id: {
+        [write_id]: Object.assign({}, Defaults.WRITE, {
+          id: write_id,
+          start: super_read.end,
+          end: note_id,
+          type: Relationships.WRITE,
+          properties: Object.assign({}, Defaults.WRITE.properties, {
+            super_read_id: super_read.id,
+          }),
+        }),
+        [read_id]: Object.assign({}, Defaults.WRITE, {
+          id: read_id,
+          start: note_id,
+          end: super_read.end,
+          type: Relationships.READ,
+          properties: Object.assign({}, Defaults.WRITE.properties, {
+            super_read_id: super_read.id,
+          }),
+        }),
+        [super_read.id]: Object.assign({}, super_read, {
+          properties: Object.assign({}, super_read.properties, {
+            sub_read_ids: [read_id, ...(super_read.properties.sub_read_ids || [])],
+          }),
+        }),
+      },
+    }, comment));
+
+    fetchState(dispatch, write_url, {super_read}, comment)
+      .then(state => {
+        // TODO merge temp data into newly assigned note, read, id
+        let new_note_id;
+        let new_write_id;
+        let new_read_id;
+        console.log(state);
+        resolveTempState([note_id, write_id, read_id]);
+      });
+  }
+}
+
+export function setNote(read, note, commit) {
+  return dispatch => {
+    const comment = 'setNote';
+
+    const notes = [note];
+
+    dispatch(setTempState({
+      node_by_id: notes.reduce(assignById, {}),
+    }, comment));
+
+    if (commit) {
+      fetchState(dispatch, state_url, {
+        notes: notes.map(note => {
+          return Object.assign({}, note, {
+            read,
+            position_editorState: null,
+          });
+        }),
+      }, comment); 
+    }
+  };
+}
+
+function setTempState(state, comment) {
+  return {
+    type: SET_TEMP_STATE,
+    payload: {
+      state,
+    },
+    comment,
+  };
+}
+
+function resolveTempState(temp_ids, comment) {
+  return {
+    type: RESOLVE_TEMP_STATE,
+    payload: {
+      temp_ids,
+    },
+    comment,
+  };
+}
+
+function fetchState(dispatch, url, params, comment) {
+  dispatch(fetchStateRequest(url, params, comment));
 
   return fetch(url, {
     method: 'post',
@@ -53,68 +220,54 @@ function fetchState(dispatch, params, url) {
     return response.json()
       .then(json => {
         if (response.ok) { 
-          dispatch(fetchStateSuccess(json.data, url));
+          dispatch(fetchStateSuccess(url, params, json.data, comment));
 
           setLocalState(json.data);
         }
         else {
-          dispatch(fetchStateFailure(json.data, url));
+          dispatch(fetchStateFailure(url, params, json.data, comment));
         }
+        return json.data;
       });
   })
   .catch(err => {
-    dispatch(fetchStateFailure(err, url));
+    dispatch(fetchStateFailure(url, params, err, comment));
   });
+
+  function fetchStateRequest(url, params, comment) {
+    return  {
+      type: FETCH_STATE_REQUEST,
+      payload: {
+        url,
+        params,
+      },
+      comment
+    };
+  }
+
+  function fetchStateSuccess(url, params, state, comment) {
+    return {
+      type: FETCH_STATE_SUCCESS,
+      payload: {
+        url,
+        params,
+        state,
+      },
+      comment,
+    };
+  }
+
+  function fetchStateFailure(url, params, error, comment) {
+    console.error(error);
+    return {
+      type: FETCH_STATE_FAILURE,
+      payload: {  
+        url,
+        params,
+        error,
+      },
+      comment,
+    };
+  }
 }
-
-function fetchStateRequest(params, url) {
-  return  {
-    type: FETCH_STATE_REQUEST,
-    payload: {
-      params,
-      url,
-    },
-  };
-}
-
-function fetchStateSuccess(state, url) {
-  return {
-    type: FETCH_STATE_SUCCESS,
-    payload: {
-      state,
-      url,
-    },
-  };
-}
-
-function fetchStateFailure(error, url) {
-  console.error(error);
-  return {
-    type: FETCH_STATE_FAILURE,
-    payload: {      
-      error,
-      url,
-    },
-  };
-}
-
-
-function setInterimNodes(nodes) {
-  return {
-    type: SET_INTERIM_NODES,
-    payload: {
-      nodes,
-    },
-  };
-}
-
-function setInterimRelationships(relationships) {
-  return {
-    type: SET_INTERIM_RELATIONSHIPS,
-    payload: {
-      relationships,
-    },
-  };
-}
-
 

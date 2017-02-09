@@ -1,10 +1,17 @@
 module.exports = (function() {
   return  {
+    assignById,
     getLocalState,
     setLocalState,
     getHeaders,
     getSuperReads,
   };
+
+  function assignById(object, item) { // use this as the callBack in an array.reduce() call
+    return Object.assign({}, object, {
+      [item.id]: item
+    });
+  }
 
   function getLocalState() {
     const user_ids = JSON.parse(localStorage.getItem('user_ids')) || [];

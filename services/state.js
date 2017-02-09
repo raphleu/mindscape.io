@@ -1,5 +1,5 @@
 
-const { Displays, Directions, Positions } = require('../src/types.js');
+const { Relationships, Defaults, Displays, Directions, Positions } = require('../src/types.js');
 
 module.exports = state;
 
@@ -8,17 +8,20 @@ function state(util) {
     getState,
     setAuthors,
     setReads,
+    setNotes,
+    addNote,
   };
 
   function getState(token_by_id) {
     return Promise.resolve(token_by_id)
-      .then(token_by_id => { // get new Author if we don't have any valid tokens
+      .then(token_by_id => {
+        // new Author if we don't have any valid tokens
         console.log('token_by_id', token_by_id)
         if (Object.keys(token_by_id).length > 0) {
           return token_by_id;
         }
         else {
-          return newAuthor()
+          return addAuthor()
             .then(author => {
               return util.encodeToken(author)
                 .then(token => {
@@ -29,17 +32,19 @@ function state(util) {
             });
         }
       })
-      .then(token_by_id => { // before we getState, add bonus notes to users' reading notes
+      .then(token_by_id => {
+        // add bonus notes to users' reading notes
         const author_ids = Object.keys(token_by_id).map(parseInt);
 
         return getBonusNoteIds()
-          .then(bonus_note_ids => addUserReadNotes(author_ids, bonus_note_ids))
+          .then(bonus_note_ids => addReads(author_ids, bonus_note_ids))
           .then(reads => token_by_id); // we still need token_by_id 
       })
-      .then(token_by_id => { // get the state, built out of users and their reading
+      .then(token_by_id => {
+        // get the state
         const author_ids = Object.keys(token_by_id).map(parseInt);
 
-        return getUserReadNotes(author_ids)
+        return getUsersUnits(author_ids)
           .then(result => {
             const {users, units} = result;
 
@@ -50,37 +55,13 @@ function state(util) {
               relationship_by_id: {},
             };
 
-            return units.reduce((state, unit) => {
-              return Object.assign({}, state,
-                {
-                  node_by_id: Object.assign({}, state.node_by_id,
-                    {
-                      [unit.node.id]: Object.assign({}, 
-                        unit.node,
-                        {
-                          write_id: unit.write.id,
-                          read_ids: unit.reads.map(read => read.id),
-                          link_ids: unit.links.map(link => link.id),                  
-                        }
-                      ),
-                    }
-                  ),
-                  relationship_by_id: Object.assign({}, state.relationship_by_id,
-                    {
-                      [unit.write.id]: unit.write,
-                    },
-                    unit.reads.reduce(util.assignById, {}),
-                    unit.links.reduce(util.assignById, {})
-                  ),
-                }
-              );
-            }, initial_state);
+            return units.reduce(util.assignUnitToState, initial_state);
           });
       });
   }
 
-  function newAuthor() {
-    console.log('newAuthor');
+  function addAuthor() {
+    console.log('addAuthor');
     const params = {
       author_props: {
         name_text: 'anonymous',
@@ -90,17 +71,9 @@ function state(util) {
         position_text: 'root',
         momentum_text: null,
       },
-      read_props: {
-        super_read_id: null,
-        position: Positions.DOCK,
-        x: 0,
-        y: 0,
+      write_props: Object.assign({}, Defaults.WRITE.properties, {
         display: Displays.PLANE,
-        portal_radius: 800,
-        radius: 1600,
-        sub_read_ids: [],
-        direction: Directions.DOWN,
-      },
+      }),
     };
     const query = `
       CREATE
@@ -113,9 +86,9 @@ function state(util) {
         author.initial_time = timestamp(),
         note += {root_props},
         note.initial_time = timestamp(),
-        write += {read_props},
+        write += {write_props},
         write.initial_time = timestamp(),
-        read += {read_props},
+        read += {write_props},
         read.initial_time = timestamp()
       RETURN 
         author,
@@ -133,8 +106,8 @@ function state(util) {
     ]);
   }
 
-  function addUserReadNotes(author_ids, note_ids) {
-    console.log('addUserReadNotes');
+  function addReads(author_ids, note_ids) {
+    console.log('addReads');
     const params = {
       author_ids,
       note_ids
@@ -165,8 +138,8 @@ function state(util) {
     return util.query(query, params);
   }
 
-  function getUserReadNotes(author_ids) {
-    console.log('getUserReadNotes');
+  function getUsersUnits(author_ids) {
+    console.log('getUsersUnits');
     const params = {
       author_ids,
     };
@@ -193,7 +166,7 @@ function state(util) {
       RETURN
         users,
         collect({
-          node: note,
+          note: note,
           write: write,
           reads: reads,
           links: links
@@ -202,12 +175,11 @@ function state(util) {
 
     return util.query(query, params)
       .then(results => {
-        console.log(results);
         return results[0]
       });
   }
 
-  function setAuthors(authors) {
+  function setAuthors(authors = []) {
     if (authors.length === 0) {
       return Promise.resolve({});
     }
@@ -231,11 +203,12 @@ function state(util) {
       .then(authors => authors.reduce(util.assignById, {}));
   }
 
-  function setReads(reads) {
+  function setReads(reads = []) {
     if (reads.length === 0) {
       return Promise.resolve({});
     }
     console.log('setReads');
+
     const params = {
       reads,
     };
@@ -245,6 +218,7 @@ function state(util) {
       MATCH 
         (user:Author)<-[read:READ]-(note:Note)
       WHERE
+        id(user) = read2.end AND
         id(read) = read2.id
       OPTIONAL MATCH
         (user)-[write:WRITE]->(note)
@@ -261,6 +235,87 @@ function state(util) {
         return {
           relationship_by_id: reads.reduce(util.assignById, {}),
         };
+      });
+  }
+
+  function setNotes(notes = []) {
+    if (notes.length === 0) {
+      return Promise.resolve({});
+    }
+    console.log('setNotes');
+
+    const params = {
+      notes
+    };
+    const query = `
+      UNWIND
+        {notes} as note2
+      MATCH 
+        (user:Author)<-[read:READ]-(note:Note)
+      WHERE
+        id(read) = note2.read.id AND
+        id(note) = note2.read.start AND
+        id(user) = note2.read.end
+      SET
+        note.position_text = note2.position_text,
+        note.momentum_text = note2.momentum_text,
+        note.final_time = timestamp()
+      RETURN
+        note
+    `;
+    return util.query(query, params)
+      .then(notes => {
+        return {
+          node_by_id: notes.reduce(util.assignById, {}),
+        };
+      });
+  }
+
+  function addNote(super_read) {
+    console.log('addNote');
+
+    const params = {
+      user_id: super_read.end,
+      super_read_id: super_read.id,
+      note_props: Defaults.Note,
+      write_props: Defaults.WRITE.properties,
+    };
+    const query = `
+      MATCH 
+        (user:Author)<-[super_read:READ]-(:Note)
+      WHERE
+        id(user) = {user_id} AND
+        id(super_read) = {super_read_id}
+      CREATE
+        (user)-[write:WRITE]->(note:Note),
+        (user)<-[read:READ]-(note)
+      SET
+        user.current_read_id = id(read),
+        note += {note_props},
+        note.live = true,
+        note.initial_time = timestamp(),
+        write += {write_props},
+        write.super_read_id = {super_read_id},
+        write.initial_time = timestamp(),
+        read += {write_props},
+        read.super_read_id = {super_read_id},
+        read.initial_time = timestamp(),
+        super_read.sub_read_ids = [id(read)] + super_read.sub_read_ids 
+      RETURN
+        user,
+        {
+          note: note,
+          write: write,
+          reads: [read],
+          links: []
+        } AS unit
+    `;
+    return util.query(query, params)
+      .then(results => {
+
+        return util.assignUnitToState({
+          node_by_id: util.assignById({}, results[0].user),
+        }, results[0].unit);
       });
   }
 }

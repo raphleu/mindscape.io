@@ -25,6 +25,7 @@ export class Notation extends React.Component {
         whiteSpace: 'nowrap',
       },
       dashboard: {
+        zIndex: 8,
         display: 'inline-block',
         verticalAlign: 'top',
         position: 'fixed',
@@ -32,35 +33,39 @@ export class Notation extends React.Component {
         border: '1px solid steelblue',
         borderTopLeftRadius: 4,
         borderBottomRightRadius: 4,
-        width: 200,
-        whiteSpace: 'normal',
-        overflow: 'auto',
       },
       dashboard_liner: {
+        position: 'relative',
         border: '1px solid azure',
         borderTopLeftRadius: 4,
         borderBottomRightRadius: 4,
-      },
-      indicators: {
-        margin: 2,
-        borderTopLeftRadius: 2,
         padding: 4,
+        width: 152,
+        backgroundColor: 'white',
+        whiteSpace: 'normal',
+        overflow: 'auto',
+        textAlign: 'right',
+      },
+      fetch_indicator: {
+        //display: fetching ? 'block' : 'none',
+        position: 'absolute',
+        right: 0,
+        top: -14,
+        border: '1px solid lavender',
+        borderTopLeftRadius: 4,
+        borderBottomRightRadius: 4,
+        height: 12,
+        width: 8,
         backgroundColor: 'white'
       },
       spacer: {
         display: 'inline-block',
-        width: 204,
+        width: 165,
       },
       frames: {
         display: 'inline-block',
       }
     };
-
-    const indicators = (
-      <div style={style.indicators}>
-        {fetching ? ' (^ _ <) ...fetching!' : ' (^ _ ^) ...ready!'}
-      </div>
-    );
 
     const reads = frame_reads.map(frame_read => {
       const path = [frame_read];
@@ -73,7 +78,7 @@ export class Notation extends React.Component {
       <div className='notation' style={ style.main }>
         <div style={style.dashboard}>
           <div style={style.dashboard_liner}>
-            {indicators}
+            <div style={style.fetch_indicator} />
             <AuthContainer />
             <CurrentContainer />
           </div>

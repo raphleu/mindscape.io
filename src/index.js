@@ -29,7 +29,7 @@ import { App } from './components/App';
 */
 
 const logger = store => next => action => {
-  console.group(action.type);
+  console.group(action.type, action.comment);
   console.info('dispatching', action);
 
   const result = next(action);

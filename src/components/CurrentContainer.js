@@ -20,7 +20,6 @@ class Current extends React.Component {
         display: 'block',
         margin: 2,
         marginTop: 0,
-        padding: 4,
         backgroundColor: 'white',
       },
     };
@@ -31,6 +30,13 @@ class Current extends React.Component {
 
     return (
       <div className='current' style={style.main}>
+        CURRENT
+        <div>
+          note_id: {note.id}
+        </div>
+        <div>
+          author_id: {write.start}
+        </div>
         <div>
           path: {path.map(read => read.id).join(' < ')}
         </div>
@@ -39,9 +45,6 @@ class Current extends React.Component {
         </div>
         <div>
           display: {path[0].properties.display}
-        </div>
-        <div>
-          author_id: {write.start}
         </div>
         <div>
           read_count: {reads.length}

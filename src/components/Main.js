@@ -11,43 +11,66 @@ class MainComponent extends React.Component {
   render() {
     const style = {
       header: {
-        zIndex: 100,
+        zIndex: 10,
         position: 'fixed',
-        top: 0,
-        left: 0,
-        marginLeft: 2,
-        borderBottom: '1px solid steelblue',
-        borderBottomLeftRadius: 4,
-        width: '100%',
-        backgroundColor: 'white',
-        verticalAlign: 'middle',
+        verticalAlign: 'bottom',
+        top: 2,
+        left: 167,
+      },
+      point: {
+        zIndex: 11,
+        position: 'absolute',
+        left: -5,
+        bottom: -5,
+        width: 7,
+        height: 7,
+        backgroundColor:  'lightyellow',
+        border: '1px solid gold',
+        borderRadius: 2
       },
       logo: {
-        display: 'inline-block',
-        marginTop: 2,
-        border: '1px solid steelblue',
-        borderBottom: 'none',
+        position: 'absolute',
+        left: -15,
+        bottom: 0,
+        border: '1px solid lavender',
         borderTopRightRadius: 4,
         borderBottomLeftRadius: 4,
       },
       logo_liner: {
+        border: '1px solid azure',
         borderTopRightRadius: 4,
         borderBottomLeftRadius: 4,
+        width: 10,
+        height: 15,
+        backgroundColor: 'white',
+      },
+      nav: {
+        border: '1px solid steelblue',
+        borderTopLeftRadius: 4,
+        borderBottomRightRadius: 4,
+      },
+      nav_liner: {
         border: '1px solid azure',
-        padding: 6,
-        //backgroundColor: 'white',  
+        borderTopLeftRadius: 4,
+        borderBottomRightRadius: 4,
+        padding: '6px 8px',
+        backgroundColor: 'white',
       },
       spacer: {
-        height: 31,
+        height: 32,
       },
     };
 
     // TODO add other nav options to header?
     return (
-      <div id='main'>
-        <div style={style.header}>
+      <div id='main' >
+        <div className='header' style={style.header}>
+          <div className='point' style={style.point} />
           <div className='logo' style={style.logo}>
-            <div style={style.logo_liner}>
+            <div style={style.logo_liner} />
+          </div>
+          <div className='nav' style={style.nav}>
+            <div style={style.nav_liner}>
               mindscape.io
             </div>
           </div>

@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 
 import { Displays, Directions, Positions, DragTypes } from '../types';
 
-import { setState } from '../actions';
+import { currentNote, frameNote, setNote, addNote } from '../actions';
 
 import { flow } from 'lodash';
 //import * as force from 'd3-force';
@@ -14,52 +14,74 @@ import { DragSource } from 'react-dnd';
 
 import { ReadDropContainer } from './ReadDropContainer';
 import { Note } from './Note';
-import { SubReadsContainer } from './SubReadsContainer';
+import { SubReads } from './SubReads';
 
 class Read extends React.Component { //Read
   constructor(props) {
     super(props);
 
+    this.setNoteRef = this.setNoteRef.bind(this);
     this.handleClick = this.handleClick.bind(this);
     this.handleDoubleClick = this.handleDoubleClick.bind(this);
+    this.handlePrimerClick = this.handlePrimerClick.bind(this);
+    this.handlePositionTextChange = this.handlePositionTextChange.bind(this);
+  }
+
+  componentDidMount() {
+    const { path, user } = this.props;
+
+    const is_current = (user.current_read_id === path[0].id);
+
+    if (is_current) {
+      this.note && this.note.focus();
+    }
+  }
+
+  setNoteRef(ref) {
+    this.note = ref;
   }
 
   handleClick(event) {
+    console.log('click');
     event.stopPropagation();
-    const { path, user, setState } = this.props;
 
-    const author = Object.assign({}, user, {
-      current_read_id: path[0].id,
-    });
+    const { path, user, dispatch } = this.props;
 
-    setState({
-      authors: [author],
-    });
+    dispatch(currentNote(path[0], path[1], user));
   }
 
   handleDoubleClick(event) {
+    console.log('doubleClick');
     event.stopPropagation();
-    const { path, user, setState } = this.props;
 
-    if (path[0].id !== user.root_read_id) {
-      const author = Object.assign({}, user, {
-        frame_read_id: (path[0].id === user.frame_read_id)
-          ? user.root_read_id
-          : path[0].id,
-      });
-      const read = Object.assign({}, path[0], {
-        properties: Object.assign({}, path[0].properties, {
-          display: (path[0].id === user.frame_read_id)
-            ? Displays.SEQUENCE
-            : Displays.PLANE,
-        }),
-      });
+    const { path, user, dispatch } = this.props;
 
-      setState({
-        authors: [author],
-        reads: [read],
-      });
-    }
+    dispatch(frameNote(path[0], user));;
+  }
+
+  handlePrimerClick(event) {
+    event.stopPropagation();
+
+    const { path, user, dispatch } = this.props;
+
+    dispatch(addNote(path[0], user));
+  }
+
+  handlePositionTextChange(editorState) {
+    const { path, note, dispatch } = this.props;
+
+    const contentState = editorState.getCurrentContent();
+    const text = contentState.getPlainText();
+
+    console.log('positionTextChange', text);
+
+    const note2 = Object.assign({}, note, {
+      position_text: text,
+      position_editorState: editorState,
+    });
+
+    const commit = false;
+    dispatch(setNote(path[0], note2, commit));
   }
 
   render() {
@@ -68,6 +90,8 @@ class Read extends React.Component { //Read
       path,
       note,
       user,
+      sub_reads,
+      //
       is_drag,
       connectDragSource,
       connectDragPreview,
@@ -98,7 +122,6 @@ class Read extends React.Component { //Read
         margin: 2,
         opacity: is_drag ? 0.5 : 1,
       },
-
       view: {
         border: is_current
           ? '1px solid darkturquoise'
@@ -106,22 +129,29 @@ class Read extends React.Component { //Read
         borderTopRightRadius: 4,
         borderBottomLeftRadius: 4,
         minWidth: 200,
+        width: is_frame ? '100%' : 'auto',
       },
-      view_liner: {
-        border: '2px solid azure',
+      header: {
+        marginBottom: 2,
+        borderBottom: '1px solid lavender',
         borderTopRightRadius: 4,
         borderBottomLeftRadius: 4,
       },
-      header: {
+      header_liner: {
         position: 'relative',
+        border: '2px solid azure',
+        borderTopRightRadius: 4,
+        borderBottomLeftRadius: 4,
+        backgroundColor: 'white',
         cursor: 'pointer',
       },
       point: {
+        zIndex: 5,
         position: 'absolute',
-        left: -4,
-        top: -4,
-        width: 6,
-        height: 6,
+        left: -6,
+        top: -6,
+        width: 5,
+        height: 5,
         backgroundColor: (position === Positions.DOCK) ? 'white' : 'lightyellow',
         border: is_current
           ? '1px solid darkturquoise'
@@ -144,23 +174,37 @@ class Read extends React.Component { //Read
 
     const index = (path[1] && ((path[1].properties.sub_read_ids || []).indexOf(path[0].id) + 1)) || 0; 
 
+    const sub_read_container = note.live
+      ? null
+      : <SubReads sub_reads={sub_reads} path={path} handlePrimerClick={this.handlePrimerClick} />;
+
     const content = (
-      <div style={style.view_liner}>
-        {connectDragSource(
-          <div style={style.header}>
-            <div style={style.point} />
-            <div style={style.index}>
-              {index}
+      <div>
+        {
+          connectDragSource(
+            <div style={style.header}>
+              <div style={style.header_liner}>
+                {
+                  is_frame ? null : <div style={style.point} />
+                }
+                <div style={style.index}>
+                  {index}
+                </div>
+                <Note
+                  ref={this.setNoteRef}
+                  note={note}
+                  handlePositionTextChange={this.handlePositionTextChange}
+                />
+              </div>
             </div>
-            <Note path={path} note={note} />
-          </div>
-        )}
-        <SubReadsContainer path={path} />
+          )
+        }
+        {sub_read_container}
       </div>
     );
 
     let view;
-    if (path[1] == null) { //if frame read
+    if (is_frame) { //if frame read
       view = (
         <div style={style.view}>
           {content}
@@ -179,8 +223,6 @@ class Read extends React.Component { //Read
         {view}
       </div>
     );
-
-
   }
 }
 
@@ -189,8 +231,8 @@ Read.propTypes = {
   // state
   note: PropTypes.object,
   user: PropTypes.object,
-  // dispatch
-  setState: PropTypes.func,
+  sub_reads: PropTypes.arrayOf(PropTypes.object),
+  dispatch: PropTypes.func,
   // drag n drop
   is_drag: PropTypes.bool,
   connectDragSource: PropTypes.func,
@@ -203,19 +245,13 @@ function getStateProps(state, ownProps) {
   const note = state.node_by_id[path[0].start];
   const user = state.node_by_id[path[0].end];
 
+  const sub_reads = (path[0].properties.sub_read_ids || []).map(sub_read_id => state.relationship_by_id[sub_read_id]);
+
   return {
     path,
     note,
     user,
-  };
-}
-
-function getDispatchProps(dispatch, ownProps) {
-  // don't need to position children!
-  return {
-    setState: (params) => {
-      dispatch(setState(params));
-    },
+    sub_reads
   };
 }
 
@@ -253,5 +289,5 @@ const noteDragSource = {
 
 export const ReadContainer = flow(
   DragSource(DragTypes.READ, noteDragSource, getDragSourceProps),
-  connect(getStateProps, getDispatchProps),
+  connect(getStateProps),
 )(Read);

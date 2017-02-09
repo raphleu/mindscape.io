@@ -31,15 +31,14 @@ class Auth extends React.Component {
         position: 'relative',
         margin: 2,
         marginTop: 0,
-        padding: 4,
         backgroundColor: 'white',
       },
       accessor: {
         cursor: 'pointer',
       },
       content: {
-        position: 'absolute',
-        display: active ? 'block' : 'none',
+        //position: 'absolute',
+        //display: active ? 'block' : 'none',
       },
     };
 
@@ -62,7 +61,7 @@ class Auth extends React.Component {
     return (
       <div className='auth' style={style.main}>
          <div style={style.accessor} onClick={this.toggleActivation}>
-           auth
+           AUTH
          </div>
          <div style={style.content}>
            {users}

@@ -5,9 +5,10 @@ import {
   FETCH_STATE_REQUEST,
   FETCH_STATE_SUCCESS,
   FETCH_STATE_FAILURE,
-  // set interim state
-  SET_INTERIM_NODES,
-  SET_INTERIM_RELATIONSHIPS,
+  // set temp state
+  SET_TEMP_STATE,
+  RESOLVE_TEMP_STATE,
+  //
 } from './actions';
 
 import { routerReducer as routing } from 'react-router-redux';
@@ -42,12 +43,9 @@ function token_by_id(state = {}, action) {
 function node_by_id(state = {}, action) {
   switch (action.type) {
     case FETCH_STATE_SUCCESS:
+    case SET_TEMP_STATE: 
+    case RESOLVE_TEMP_STATE:
       return Object.assign({}, state, action.payload.state.node_by_id);
-
-    case SET_INTERIM_NODES: 
-      return Object.assign({}, state,
-        action.payload.nodes.reduce(interimAssignById, {})
-      );
 
     default:
       return state;
@@ -57,12 +55,10 @@ function node_by_id(state = {}, action) {
 function relationship_by_id(state = {}, action) {
   switch (action.type) {
     case FETCH_STATE_SUCCESS:
+    case SET_TEMP_STATE:
+    case RESOLVE_TEMP_STATE:
       return Object.assign({}, state, action.payload.state.relationship_by_id);
 
-    case SET_INTERIM_RELATIONSHIPS:
-      return Object.assign({}, state,
-        action.payload.relationships.reduce(interimAssignById, {})
-      );
     default:
       return state;
   }
@@ -92,10 +88,10 @@ export const rootReducer = combineReducers({
   user_ids,
 });
 
-function interimAssignById(object, item) { // use this as the callBack in an array.reduce() call
+function tempAssignById(object, item) { // use this as the callBack in an array.reduce() call
   return Object.assign({}, object, {
     [item.id]: Object.assign({}, item, {
-      interim: true,
+      temp: true,
     }),
   });
 }

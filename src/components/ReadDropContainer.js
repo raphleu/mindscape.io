@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 
 import { Displays, Positions, DragTypes } from '../types';
 
-import { setState } from '../actions';
+import { moveNote } from '../actions';
 
 import { flow } from 'lodash';
 
@@ -82,92 +82,71 @@ const dropTarget = {
       return;
     }
 
-    const { path, depth, item_position, setState } = props; // target props
+    const { path, depth, item_position, dispatch } = props; // target props
     const target_clientRect = findDOMNode(component).getBoundingClientRect();
 
     const item = monitor.getItem();
 
-    const reads = []; // collect reads to modify
-
-    let insert_after_target;
-
-    let item_super_read2;
-    // remove item from prev item_super_read
-    const item_super_read1 = filterSubRead(item.path[1], item.path[0]);
-
-    if (item.path[1].id === path[depth].id) {
-      item_super_read2 = item_super_read1;
-    }
-    else {
-      reads.push(item_super_read1);
-
-      item_super_read2 = Object.assign({}, path[depth]);
-    }
-
-    // add item to next item_super_read
-    if (depth === 0) {
-      // if we set target as parent, then push item onto end of list
-      item_super_read2.properties.sub_read_ids.push(item.path[0].id);
-    }
-    else if (depth === 1) {
-      // if we set target as peer, then insert item before/after target based on click location
-      const target_clientMiddleY = target_clientRect.top + (target_clientRect.bottom - target_clientRect.top) / 2;
-      const cursor_clientOffset = monitor.getClientOffset();
-
-      insert_after_target = (cursor_clientOffset.y > target_clientMiddleY);
-
-      item_super_read2 = insertSubRead(item_super_read2, item.path[0], path[0], insert_after_target);
-    }
-
-    reads.push(item_super_read2);
-
-
-    let item_read_props;
-    if (item_position === Positions.DOCK) { // if moving item to dock
-      if (item.path[1].id !== path[depth].id) { // if item to new super_read
-        // initialize coords at origin
-        item_read_props = {
-          x: 0,
-          y: 0,
-        };
-      }
-    }
-    else if (item_position === Positions.DRIFT) {
-      if (depth === 0) { // if target as super_read
-        const item_clientOffset = monitor.getSourceClientOffset();
-        item_read_props = {
-          x: Math.max(item_clientOffset.x - target_clientRect.left, 0),
-          y: Math.max(item_clientOffset.y - target_clientRect.top, 0),
-        }; 
-      }
-      else if (depth === 1) {
-        if (insert_after_target) {
-          item_read_props = {
-            x: path[0].properties.x, 
-            y: path[0].properties.y + target_clientRect.height + 2,
-          };       
-        }
-        else {
-          item_read_props = {
-            x: path[0].properties.x, 
-            y: Math.max(path[0].properties.y - item.clientRect.height - 2, 0),
-          }; 
-        }
-      }
-    }
-    const item_read = Object.assign({}, item.path[0], {
-      properties: Object.assign({}, item.path[0].properties, item_read_props, {
+    const read = Object.assign({}, item.path[0], {
+      properties: Object.assign({}, item.path[0].properties, {
         super_read_id: path[depth].id,
         position: item_position,
       }),
     });
-    reads.push(item_read);
 
-    console.log('reads', reads);
+    let prev_super_read;
+    let super_read;
 
-    setState({
-      reads
-    });
+    const change_super_read = (item.path[1].id !== path[depth].id);
+
+    if (change_super_read) {
+      prev_super_read = filterSubRead(item.path[1], item.path[0]);
+      super_read = Object.assign({}, path[depth]);      
+    }
+
+    if (depth === 0) { // if target == super
+      if (read.properties.position === Positions.DOCK) {
+        if (change_super_read) {
+          read.properties.x = 0;
+          read.properties.y = 0;
+        }
+      }
+      else if (read.properties.position === Positions.DRIFT) {
+        const item_clientOffset = monitor.getSourceClientOffset();
+
+        read.properties.x = Math.max(item_clientOffset.x - target_clientRect.left, 0);
+        read.properties.y = Math.max(item_clientOffset.y - target_clientRect.top, 0);  
+      }
+
+      if (change_super_read) {
+        super_read.properties.sub_read_ids.unshift(item.path[0].id);
+      }
+    }
+    else if (depth === 1) {
+      const target_clientMiddleY = target_clientRect.top + (target_clientRect.bottom - target_clientRect.top) / 2;
+      const cursor_clientOffset = monitor.getClientOffset();
+
+      const insert_before_target = (cursor_clientOffset.y < target_clientMiddleY);
+
+      if (read.properties.position === Positions.DOCK) {
+        if (change_super_read) {
+          read.properties.x = 0;
+          read.properties.y = 0;
+        }
+      }
+      else if (read.properties.position === Positions.DRIFT) {
+        read.properties.x = path[0].properties.x;
+        read.properties.y = insert_before_target
+          ? Math.max(path[0].properties.y - item.clientRect.height - 2, 0)
+          : path[0].properties.y + target_clientRect.height + 2; //TODO make sure within bounds
+      }
+
+      if (change_super_read) {
+        super_read = insertSubRead(super_read, read, path[0], insert_before_target);
+      }
+    }
+
+    dispatch(moveNote(read, super_read, prev_super_read));
   },
 };
 
@@ -180,9 +159,9 @@ function filterSubRead(read, sub_read) {
   })
 }
 
-function insertSubRead(read, insert_sub_read, target_sub_read, insert_after_target) {
+function insertSubRead(read, insert_sub_read, target_sub_read, insert_before_target) {
   const target_index = read.properties.sub_read_ids.indexOf(target_sub_read.id);
-  const insert_index = insert_after_target ? target_index + 1 : target_index;
+  const insert_index = insert_before_target ? target_index : target_index + 1;
   // return a copy of read w/ insert_sub_read.id inserted before/after target_sub_read
   const read2 = Object.assign({}, read);
   read2.properties.sub_read_ids.splice(insert_index, 0, insert_sub_read.id);
@@ -191,5 +170,5 @@ function insertSubRead(read, insert_sub_read, target_sub_read, insert_after_targ
 
 export const ReadDropContainer = flow(
   DropTarget(DragTypes.READ, dropTarget, getDropTargetProps),
-  connect(null, getDispatchProps),
+  connect(),
 )(ReadDrop);
