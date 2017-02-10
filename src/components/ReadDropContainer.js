@@ -45,14 +45,6 @@ ReadDrop.propTypes = {
   connectDropTarget: PropTypes.func,
 }
 
-function getDispatchProps(dispatch) {
-  return {
-    setState: (params) => {
-      dispatch(setState(params));
-    },
-  };
-}
-
 function getDropTargetProps(connector, monitor) { // dragNDropProps
   return {
     is_over: (monitor.isOver({shallow: true}) && monitor.canDrop()),
@@ -82,7 +74,7 @@ const dropTarget = {
       return;
     }
 
-    const { path, depth, item_position, dispatch } = props; // target props
+    const { user, path, depth, item_position, dispatch } = props; // target props
     const target_clientRect = findDOMNode(component).getBoundingClientRect();
 
     const item = monitor.getItem();
@@ -146,7 +138,7 @@ const dropTarget = {
       }
     }
 
-    dispatch(moveNote(read, super_read, prev_super_read));
+    dispatch(moveNote(item.user, item.note, read, super_read, prev_super_read));
   },
 };
 

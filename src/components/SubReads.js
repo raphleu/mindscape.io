@@ -27,7 +27,7 @@ export class SubReads extends React.Component { //SubReadsContainer
 
   render() {
     //console.log('render SubReadsContainer', this.props);
-    const { sub_reads, path, handlePrimerClick } = this.props;
+    const { sub_reads, path, stageSubNote } = this.props;
 
     let portal_radius;
     let radius;
@@ -85,7 +85,7 @@ export class SubReads extends React.Component { //SubReadsContainer
 
     const primer = (
       <ReadDropContainer key={'primer-'+path[0].id} path={path} depth={0} item_position={Positions.DOCK} style={style.primer}>
-        <div style={style.primer_liner} onClick={handlePrimerClick} />
+        <div style={style.primer_liner} onClick={stageSubNote} />
       </ReadDropContainer>
     );
 
@@ -151,6 +151,7 @@ export class SubReads extends React.Component { //SubReadsContainer
 SubReads.propTypes = {
   path: PropTypes.arrayOf(PropTypes.object).isRequired,
   sub_reads: PropTypes.arrayOf(PropTypes.object),
+  stageSubNote: PropTypes.func,
   //arrow_ids: PropTypes.arrayOf(PropTypes.number),
 }
 

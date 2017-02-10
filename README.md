@@ -1,2 +1,4 @@
 # mindscape.io
-organize and share your notes!
+a premier web outliner
+
+"Organize and share your notes!"

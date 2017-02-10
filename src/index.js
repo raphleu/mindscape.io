@@ -6,7 +6,7 @@ import { createStore, applyMiddleware } from 'redux';
 import thunkMiddleware from 'redux-thunk';
 import { rootReducer } from './reducers';
 
-import { getLocalState } from './util';
+import { getLocalStorageState } from './util';
 
 import { browserHistory } from 'react-router';
 import { syncHistoryWithStore } from 'react-router-redux'
@@ -42,7 +42,7 @@ const logger = store => next => action => {
 
 const store = createStore(
   rootReducer,
-  getLocalState(),
+  getLocalStorageState(),
   applyMiddleware(
     thunkMiddleware,
     logger

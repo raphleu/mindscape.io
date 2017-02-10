@@ -1,19 +1,34 @@
 module.exports = (function() {
   return  {
     assignById,
-    getLocalState,
-    setLocalState,
+    getLocalStorageState,
+    setLocalStorageState,
     getHeaders,
     getSuperReads,
   };
 
   function assignById(object, item) { // use this as the callBack in an array.reduce() call
+    if (item == null || item.id == null) {
+      return object;
+    }
     return Object.assign({}, object, {
       [item.id]: item
     });
   }
 
-  function getLocalState() {
+  function setLocalStorageState(state) {
+    // TODO validate state?
+    if (state.user_ids) {
+      localStorage.setItem('user_ids', JSON.stringify(state.user_ids));
+    }
+    if (state.token_by_id) {
+      Object.keys(state.token_by_id).forEach(user_id => {
+        localStorage.setItem('token-'+user_id, state.token_by_id[user_id]);
+      });
+    }
+  }
+
+  function getLocalStorageState() {
     const user_ids = JSON.parse(localStorage.getItem('user_ids')) || [];
 
     const token_by_id = {};
@@ -30,20 +45,8 @@ module.exports = (function() {
     return state;
   }
 
-  function setLocalState(state) {
-    // TODO validate state?
-    if (state.user_ids) {
-      localStorage.setItem('user_ids', JSON.stringify(state.user_ids));
-    }
-    if (state.token_by_id) {
-      Object.keys(state.token_by_id).forEach(user_id => {
-        localStorage.setItem('token-'+user_id, state.token_by_id[user_id]);
-      });
-    }
-  }
-
   function getHeaders(user_id) {
-    const {user_ids, token_by_id} = getLocalState();
+    const {user_ids, token_by_id} = getLocalStorageState();
 
     const tokens = user_id
       ? [token_by_id[user_id]]

@@ -35,7 +35,7 @@ class Current extends React.Component {
           note_id: {note.id}
         </div>
         <div>
-          author_id: {write.start}
+          author_id: {write && write.start}
         </div>
         <div>
           path: {path.map(read => read.id).join(' < ')}

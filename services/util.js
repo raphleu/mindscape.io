@@ -37,7 +37,11 @@ module.exports = function(seraph_instance) {
     });
   }
 
-  function assignById(object, item) { // use this as the callBack in an array.reduce() call
+  function assignById(object, item, map) { // use this as the callBack in an array.reduce() call
+    if (item == null || item.id == null) {
+      console.error('item has no id', object, item, map);
+      return object;
+    }
     return Object.assign({}, object, {
       [item.id]: item
     });

@@ -39,6 +39,7 @@ module.exports = (function() {
       id: null,
       initial_time: null,
       final_time: null,
+      // elapsed_time: the time spent writing!
       position_text: '',
       position_editorState: null,
       momentum_text: '',
@@ -47,11 +48,11 @@ module.exports = (function() {
       read_ids: [],
       link_ids: [],
     },
-    WRITE: {
+    READ: {
       id: null,
       start: null,
       end: null,
-      type: null,
+      type: Relationships.READ,
       properties: {
         initial_time: null,
         final_time: null,
@@ -61,13 +62,11 @@ module.exports = (function() {
         y: 0,
         display: Displays.SEQUENCE,
         direction: Directions.DOWN,
-        portal_radius: 800,
         radius: 1600,
         sub_read_ids: [],
       },
     },
   };
-
 
   return  {
     Nodes,

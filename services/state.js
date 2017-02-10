@@ -9,7 +9,8 @@ function state(util) {
     setAuthors,
     setReads,
     setNotes,
-    addNote,
+    commitNotes,
+    deleteNotes,
   };
 
   function getState(token_by_id) {
@@ -71,7 +72,7 @@ function state(util) {
         position_text: 'root',
         momentum_text: null,
       },
-      write_props: Object.assign({}, Defaults.WRITE.properties, {
+      write_props: Object.assign({}, Defaults.READ.properties, {
         display: Displays.PLANE,
       }),
     };
@@ -94,7 +95,7 @@ function state(util) {
         author,
         note
     `;
-    return util.query(query, params)
+    return util.query(query, params, true)
       .then(results => results[0].author);
   }
 
@@ -137,7 +138,7 @@ function state(util) {
     `;
     return util.query(query, params);
   }
-
+  // TODO figure out the best way to get the node labels onto the nodes
   function getUsersUnits(author_ids) {
     console.log('getUsersUnits');
     const params = {
@@ -173,7 +174,7 @@ function state(util) {
         }) AS units      
     `;
 
-    return util.query(query, params)
+    return util.query(query, params, true)
       .then(results => {
         return results[0]
       });
@@ -200,28 +201,33 @@ function state(util) {
         author
     `;
     return util.query(query, params)
-      .then(authors => authors.reduce(util.assignById, {}));
+      .then(authors => {
+        return {
+          node_by_id: authors.reduce(util.assignById, {})
+        };
+      });
   }
 
-  function setReads(reads = []) {
+  function setReads(author, reads = []) {
+    // write holds a copy of the og author's read, so set that too
     if (reads.length === 0) {
       return Promise.resolve({});
     }
     console.log('setReads');
 
     const params = {
+      user_id: author.id,
       reads,
     };
     const query = `
-      UNWIND
-        {reads} as read2
-      MATCH 
-        (user:Author)<-[read:READ]-(note:Note)
-      WHERE
-        id(user) = read2.end AND
-        id(read) = read2.id
-      OPTIONAL MATCH
-        (user)-[write:WRITE]->(note)
+      MATCH (user:Author)
+      WHERE id(user) = {user_id}
+      WITH
+        user
+      UNWIND {reads} as read2
+      MATCH (user)<-[read:READ]-(note:Note)
+      WHERE id(read) = read2.id
+      OPTIONAL MATCH (user)-[write:WRITE]->(note)
       SET
         read += read2.properties,
         read.final_time = timestamp(),
@@ -238,24 +244,26 @@ function state(util) {
       });
   }
 
-  function setNotes(notes = []) {
+  function setNotes(author, notes = []) {
     if (notes.length === 0) {
       return Promise.resolve({});
     }
     console.log('setNotes');
 
     const params = {
-      notes
+      user_id: author.id,
+      notes,
     };
     const query = `
+      MATCH (user:Author) WHERE id(user) = {user_id}
+      WITH
+        user
       UNWIND
         {notes} as note2
-      MATCH 
-        (user:Author)<-[read:READ]-(note:Note)
+      MATCH
+        (user)<-[:READ]-(note:Note)
       WHERE
-        id(read) = note2.read.id AND
-        id(note) = note2.read.start AND
-        id(user) = note2.read.end
+        id(note) = note2.id
       SET
         note.position_text = note2.position_text,
         note.momentum_text = note2.momentum_text,
@@ -271,51 +279,91 @@ function state(util) {
       });
   }
 
-  function addNote(super_read) {
-    console.log('addNote');
+  function commitNotes(author, units) {
+    console.log('commitNotes');
 
     const params = {
-      user_id: super_read.end,
-      super_read_id: super_read.id,
-      note_props: Defaults.Note,
-      write_props: Defaults.WRITE.properties,
+      user_id: author.id,
+      units,
     };
     const query = `
-      MATCH 
-        (user:Author)<-[super_read:READ]-(:Note)
+      MATCH (user:Author) WHERE id(user) = {user_id}
+      WITH
+        user
+      UNWIND
+        {units} AS unit
+      MATCH
+        (user)<-[super_read:READ]-(:Note)
       WHERE
-        id(user) = {user_id} AND
-        id(super_read) = {super_read_id}
+        id(super_read) = unit.read.properties.super_read_id
       CREATE
         (user)-[write:WRITE]->(note:Note),
         (user)<-[read:READ]-(note)
       SET
         user.current_read_id = id(read),
-        note += {note_props},
-        note.live = true,
+        super_read.sub_read_ids = [id(read)] + super_read.sub_read_ids,
+        note.position_text = unit.note.position_text,
+        note.momentum_text = unit.note.momentum_text,
         note.initial_time = timestamp(),
-        write += {write_props},
-        write.super_read_id = {super_read_id},
+        write += unit.read.properties,
         write.initial_time = timestamp(),
-        read += {write_props},
-        read.super_read_id = {super_read_id},
-        read.initial_time = timestamp(),
-        super_read.sub_read_ids = [id(read)] + super_read.sub_read_ids 
+        read += unit.read.properties,
+        read.initial_time = timestamp()
       RETURN
         user,
-        {
+        collect(super_read) AS super_reads,
+        collect({
           note: note,
           write: write,
           reads: [read],
           links: []
-        } AS unit
+        }) AS units
     `;
-    return util.query(query, params)
+    return util.query(query, params, true)
       .then(results => {
+        const initial_state = {
+          node_by_id: {
+            [results[0].user.id]: results[0].user,
+          },
+          relationship_by_id: results[0].super_reads.reduce(util.assignById, {}),
+        };
+        return results[0].units.reduce(util.assignUnitToState, initial_state);
+      });
+  }
 
-        return util.assignUnitToState({
-          node_by_id: util.assignById({}, results[0].user),
-        }, results[0].unit);
+  function deleteNotes(author, units) {
+    console.log('deleteNotes');
+
+    const params = {
+      user_id: author.id,
+      units,
+    };
+
+    const query = `
+      MATCH (user:Author) WHERE id(user) = {user_id}
+      WITH
+        user
+      UNWIND
+        {units} AS unit
+      MATCH
+        (user)-[write:WRITE]->(note:Note)
+      WHERE
+        id(note) = unit.note.id
+      DETACH DELETE note
+      OPTIONAL MATCH
+        (user)<-[super_read:READ]-(:Note)
+      WHERE
+        id(super_read) = unit.read.properties.super_read_id
+      SET
+        super_read.sub_read_ids = filter(id IN super_read.sub_read_ids WHERE id <> unit.read.id)
+      RETURN
+        super_read
+    `;
+    return util.query(query, params, true)
+      .then(super_reads => {
+        return {
+          relationship_by_id: super_reads.reduce(util.assignById, {}),
+        };
       });
   }
 }

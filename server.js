@@ -67,18 +67,52 @@ app.post('/api/state/initialize', (req, res) => {
     });
 });
 
-app.post('/api/state', (req, res) => {
+app.post('/api/state/update', (req, res) => {
   const { token_by_id } = req.headers;
-  let { authors, reads, notes } = req.body;
+  let { author, update } = req.body;
 
-  authors = (authors || []).filter(author => token_by_id[author.id]);
-  reads = (reads || []).filter(read => token_by_id[read.end]);
-  notes = (notes || []).filter(note => token_by_id[note.read.end]);
+  if (token_by_id[author.id] == null) {
+    res.status(401).json({data: 'Permission denied.'})
+  }
+ 
+  const { node_by_id, relationship_by_id } = update;
+
+  const authors = [];
+  const notes = [];
+  if (node_by_id) {
+    Object.keys(node_by_id).forEach(id => {
+      const node = node_by_id[id];
+      if (id === author.id) {
+        authors.push(node);
+      }
+      else {
+        notes.push(node);
+      }
+    });   
+  }
+
+  const writes = [];
+  const reads = [];
+  const links = [];
+  if (relationship_by_id) {
+    Object.keys(relationship_by_id).forEach(id => {
+      const relationship = relationship_by_id[id];
+      if (relationship.type === 'WRITE') {
+        writes.push(relationship);
+      }
+      else if (relationship.type === 'READ') {
+        reads.push(relationship);
+      }
+      else if (relationship.type === 'LINK') {
+        links.push(relationship);
+      }
+    });
+  }
 
   const updates = [
     services.state.setAuthors(authors),
-    services.state.setReads(reads),
-    services.state.setNotes(notes),
+    services.state.setNotes(author, notes),
+    services.state.setReads(author, reads),
   ];
 
   Promise.all(updates)
@@ -96,15 +130,15 @@ app.post('/api/state', (req, res) => {
     });
 });
 
-app.post('/api/write', (req, res) => {
+app.post('/api/state/commit', (req, res) => {
   const { token_by_id } = req.headers;
-  let { super_read } = req.body;
+  let { author, units } = req.body;
 
-  if (token_by_id[super_read.end] == null) {
+  if (token_by_id[author.id] == null) {
     res.status(500).json({data: 'Permission denied'});
   }
 
-  services.state.addNote(super_read)
+  services.state.commitNotes(author, units)
     .then(state => {
       res.status(200).json({data: state});
     })
@@ -113,25 +147,22 @@ app.post('/api/write', (req, res) => {
     });
 })
 
-/*
-app.post('/api/state/login', (req, res) => {
-  const { signature } = req.body;
+app.post('/api/state/delete', (req, res) => {
+  const { token_by_id } = req.headers;
+  let { author, units } = req.body;
 
-  // get author using either (a) name + password, or (b) token
-  services.author.getAuthor(signature, token, getCallback(res, (author) => {
-    services.state.getState(author.id, token, getCallback(res));
-  }));
-});
+  if (token_by_id[author.id] == null) {
+    res.status(500).json({data: 'Permission denied'});
+  }
 
-app.post('/api/state/logout', (req, res) => {
-  const { signature, token } = req.body;
-
-  // get author using either (a) name + password, or (b) token
-  services.author.getAuthor(signature, token, getCallback(res, (author) => {
-    services.state.getState(author.id, token, getCallback(res));
-  }));
-});
-*/
+  services.state.deleteNotes(author, units)
+    .then(state => {
+      res.status(200).json({data: state});
+    })
+    .catch(err => {
+      res.status(500).json({data: err.message});
+    });
+})
 
 app.listen(app.get('port'), () => {
   console.log('Server started: http://localhost:' + app.get('port') + '/');

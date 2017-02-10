@@ -1,108 +1,41 @@
 import fetch from 'isomorphic-fetch';
 
 import { Defaults, Displays, Relationships } from './types';
-import { getHeaders, setToken, setLocalState, assignById } from './util';
+import { getHeaders, setToken, setLocalStorageState, assignById } from './util';
+
+export const SET_LOCAL_STATE = 'SET_LOCAL_STATE';
 
 export const FETCH_STATE_REQUEST = 'FETCH_STATE_REQUEST';
 export const FETCH_STATE_SUCCESS = 'FETCH_STATE_SUCCESS';
 export const FETCH_STATE_FAILURE = 'FETCH_STATE_FAILURE';
 
-export const SET_TEMP_STATE = 'SET_TEMP_STATE';
-export const RESOLVE_TEMP_STATE = 'RESOLVE_TEMP_STATE';
-
-export const SET_CURRENT_READ_ID = 'SET_CURRENT_READ_ID';
-export const SET_FRAME_READ_ID = 'SET_FRAME_READ_ID';
-
 const initialize_url = '/api/state/initialize';
-const state_url = 'api/state';
-const write_url = 'api/write';
+const update_url = 'api/state/update';
+const commit_url = 'api/state/commit';
+const delete_url = 'api/state/delete';
 
 export function initialize() {
+  let comment = 'initialize state'
   return dispatch => {
-    const comment = 'initialize';
-    return fetchState(dispatch, initialize_url, {}, comment);
-  };
-}
-export function moveNote(read, super_read, prev_super_read) {
-  return dispatch => {
-    const comment = 'moveNote';
+    fetchState(dispatch, initialize_url, {}, comment)
+      .then(state => {
+        console.log(state);
 
-    const reads = [read];
+        dispatch(setLocalState(state, comment));
 
-    if (super_read && prev_super_read) {
-      reads.push(super_read);
-      reads.push(prev_super_read);
-    }
-
-    dispatch(setTempState({
-      relationship_by_id: reads.reduce(assignById, {}),
-    }, comment));
-
-    fetchState(dispatch, state_url, {reads}, comment);
+        // save some state to local storage (user_ids, token_by_id)
+        setLocalStorageState(state);
+      })
+      .catch(error => {
+        console.error(error, comment);
+      });
   };
 }
 
-export function currentNote(read, super_read, author) {
+export function stageNote(author, super_read) {
+  let comment = 'stage note';
   return dispatch => {
-    const comment = 'currentNote';
-    if (read.id === author.current_read_id) {
-      return;
-    }
-
-    const author2 = Object.assign({}, author, {
-      current_read_id: read.id,
-    });
-
-    dispatch(setTempState({
-      node_by_id: assignById({}, author2),
-      //relationship_by_id: assignById({}, super_read2),
-    }, comment));
-
-    /*
-    fetchState(dispatch, state_url, {
-      authors: [author2],
-      //reads: [super_read2],
-    }, comment);
-    */
-  };
-}
-
-export function frameNote(read, author) {
-  return dispatch => {
-    const comment = 'frameNote'
-    if (read.id === author.root_read_id) {
-      return;
-    }
-
-    const is_frame = (read.id === author.frame_read_id);
-
-    const author2 = Object.assign({}, author, {
-      frame_read_id: is_frame ? author.root_read_id : read.id,
-    });
-
-    const read2 = Object.assign({}, read, {
-      properties: Object.assign({}, read.properties, {
-        display: is_frame ? Displays.SEQUENCE : Displays.PLANE,
-      }),
-    });
-
-    dispatch(setTempState({
-      node_by_id: assignById({}, author2),
-      relationship_by_id: assignById({}, read2),
-    }, comment));
-
-    fetchState(dispatch, state_url, {
-      authors: [author2],
-      reads: [read2],
-    }, comment);
-  }
-}
-
-export function addNote(super_read, author) {
-  return dispatch => {
-    const comment = 'addNote';
-
-    // allocate temp_ids
+        // allocate temp_ids
     let timestamp = Date.now();
     const note_id = 'temp-' + timestamp;
 
@@ -112,36 +45,22 @@ export function addNote(super_read, author) {
     timestamp++;
     const read_id = 'temp-' + timestamp;
 
-
-    dispatch(setTempState({
+    const update = {
       node_by_id: {
         [author.id]: Object.assign({}, author, {
           current_read_id: read_id,
         }),
         [note_id]: Object.assign({}, Defaults.Note, {
-          live: true,
           id: note_id,
-          write_id: write_id,
           read_ids: [read_id],
-          link_ids: [],
         }),
       },
       relationship_by_id: {
-        [write_id]: Object.assign({}, Defaults.WRITE, {
-          id: write_id,
-          start: super_read.end,
-          end: note_id,
-          type: Relationships.WRITE,
-          properties: Object.assign({}, Defaults.WRITE.properties, {
-            super_read_id: super_read.id,
-          }),
-        }),
-        [read_id]: Object.assign({}, Defaults.WRITE, {
+        [read_id]: Object.assign({}, Defaults.READ, {
           id: read_id,
           start: note_id,
-          end: super_read.end,
-          type: Relationships.READ,
-          properties: Object.assign({}, Defaults.WRITE.properties, {
+          end: author.id,
+          properties: Object.assign({}, Defaults.READ.properties, {
             super_read_id: super_read.id,
           }),
         }),
@@ -151,58 +70,194 @@ export function addNote(super_read, author) {
           }),
         }),
       },
-    }, comment));
+    };
 
-    fetchState(dispatch, write_url, {super_read}, comment)
-      .then(state => {
-        // TODO merge temp data into newly assigned note, read, id
-        let new_note_id;
-        let new_write_id;
-        let new_read_id;
-        console.log(state);
-        resolveTempState([note_id, write_id, read_id]);
-      });
-  }
+    dispatch(setLocalState(update, comment));
+  };
 }
 
-export function setNote(read, note, commit) {
+export function cancelNote(author, note, read, super_read) {
+  let comment = 'cancel note'
   return dispatch => {
-    const comment = 'setNote';
-
-    const notes = [note];
-
-    dispatch(setTempState({
-      node_by_id: notes.reduce(assignById, {}),
-    }, comment));
-
-    if (commit) {
-      fetchState(dispatch, state_url, {
-        notes: notes.map(note => {
-          return Object.assign({}, note, {
-            read,
-            position_editorState: null,
-          });
+    const update = {
+      node_by_id: {
+        [author.id]: Object.assign({}, author, {
+          current_read_id: super_read.id,
         }),
-      }, comment); 
+        [note.id]: null,
+      },
+      relationship_by_id: {
+        [read.id]: null,
+        [super_read.id]: Object.assign({}, super_read, {
+          properties: Object.assign({}, super_read.properties, {
+            sub_read_ids: super_read.properties.sub_read_ids.filter(sub_read_id => (sub_read_id !== read.id)),
+          }),
+        }),
+      },
+    };
+
+    dispatch(setLocalState(update, comment));
+  };
+}
+
+export function setNote(author, note, read) {
+  let comment = 'set note';
+  return dispatch => {
+    const update = {
+      node_by_id: {
+        [note.id]: note
+      }
+    };
+    dispatch(setLocalState(update, comment));
+
+    // TODO strip out position_editorState on the client-side?
+    
+    if (note.write_id) { // if note is committed
+      fetchState(dispatch, update_url, {author, update}, comment); 
     }
   };
 }
 
-function setTempState(state, comment) {
-  return {
-    type: SET_TEMP_STATE,
-    payload: {
-      state,
-    },
-    comment,
+export function commitNote(author, note, read) {
+  let comment = 'commit note';
+  return dispatch => {
+    const update = {
+      node_by_id: {
+        [note.id]: Object.assign({}, note, {
+          committing: true,
+        }),
+      },
+    };
+    setLocalState(update, comment);
+
+    const units = [{
+      note,
+      read,
+    }];
+
+    fetchState(dispatch, commit_url, {author, units}, 'commit note')
+      .then(state => {
+        const update2 = {
+          node_by_id: Object.assign({[note.id]: null}, state.node_by_id),
+          relationship_by_id: Object.assign({[read.id]: null}, state.relationship_by_id),
+        };
+
+        dispatch(setLocalState(update2, comment))
+      });
   };
 }
 
-function resolveTempState(temp_ids, comment) {
+export function deleteNote(note, read) {
+  let comment = 'delete note';
+  return dispatch => {
+    const update = {
+      node_by_id: {
+        [note.id]: Object.assign({}, note, {
+          deleting: true,
+        }),
+      },
+    };
+    setLocalState(update, comment);
+
+    const units = [{
+      note,
+      read,
+    }];
+
+    fetchState(dispatch, delete_url, {author, units}, comment)
+      .then(state => {
+        const update2 = {
+          node_by_id: {
+            [note.id]: null,
+          },
+          relationship_by_id: Object.assign({[read.id]: null}, state.relationship_by_id),
+        }
+        setLocalState(update2, comment);
+      });
+  }
+}
+
+export function moveNote(author, note, read, super_read, prev_super_read) {
+  let comment = 'move note';
+  return dispatch => {
+    const update = {
+      node_by_id: {
+        [author.id]: Object.assign({}, author, {
+          current_read_id: read.id,
+        }),
+      },
+      relationship_by_id: [read, super_read, prev_super_read].reduce(assignById, {}),
+    };
+
+    dispatch(setLocalState(update, comment));
+
+    if (note.write_id) { // if note is committed
+      fetchState(dispatch, update_url, {author, update}, comment);
+    }
+  };
+}
+
+export function currentNote(author, note, read) {
+  let comment = 'current note';
+  return dispatch => {
+    if (read.id === author.current_read_id) {
+      return;
+    }
+
+    const update = {
+      node_by_id: {
+        [author.id]: Object.assign({}, author, {
+          current_read_id: read.id,
+        }),
+      },
+    };
+
+    dispatch(setLocalState(update, comment));
+
+    if (note.write_id) {
+      fetchState(dispatch, update_url, {author, update}, comment);
+    }
+  };
+}
+
+export function frameNote(author, note, read) {
+  let comment = 'frame note';
+  return dispatch => {
+    if (note.write_id == null) {
+      return;
+    }
+    if (read.id === author.root_read_id) {
+      return;
+    }
+
+    const is_frame = (read.id === author.frame_read_id);
+
+    const update = {
+      node_by_id: {
+        [author.id]: Object.assign({}, author, {
+          frame_read_id: is_frame ? author.root_read_id : read.id,
+        }),
+      },
+      relationship_by_id: {
+        [read.id]: Object.assign({}, read, {
+          properties: Object.assign({}, read.properties, {
+            display: is_frame ? Displays.SEQUENCE : Displays.PLANE,
+          }),
+        }),
+      },
+    };
+
+    dispatch(setLocalState(update, comment));
+    
+    fetchState(dispatch, update_url, {author, update}, comment);
+  }
+}
+
+function setLocalState(state, comment) {
   return {
-    type: RESOLVE_TEMP_STATE,
+    type: SET_LOCAL_STATE,
     payload: {
-      temp_ids,
+      state,
     },
     comment,
   };
@@ -215,24 +270,21 @@ function fetchState(dispatch, url, params, comment) {
     method: 'post',
     headers: getHeaders(),
     body: JSON.stringify(params),
-  })
-  .then(response => {
-    return response.json()
-      .then(json => {
-        if (response.ok) { 
-          dispatch(fetchStateSuccess(url, params, json.data, comment));
-
-          setLocalState(json.data);
-        }
-        else {
-          dispatch(fetchStateFailure(url, params, json.data, comment));
-        }
-        return json.data;
-      });
-  })
-  .catch(err => {
-    dispatch(fetchStateFailure(url, params, err, comment));
-  });
+  }).then(response => {
+      return response.json()
+        .then(json => {
+          if (response.ok) { 
+            dispatch(fetchStateSuccess(url, params, json.data, comment));
+          }
+          else {
+            throw Error(json.data);
+          }
+          return json.data;
+        });
+    })
+    .catch(error => {
+      dispatch(fetchStateFailure(url, params, error, comment));
+    });
 
   function fetchStateRequest(url, params, comment) {
     return  {

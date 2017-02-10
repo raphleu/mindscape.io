@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 
 import { Displays, Directions, Positions, DragTypes } from '../types';
 
-import { currentNote, frameNote, setNote, addNote } from '../actions';
+import { currentNote, frameNote, stageNote } from '../actions';
 
 import { flow } from 'lodash';
 //import * as force from 'd3-force';
@@ -13,83 +13,51 @@ import { findDOMNode } from 'react-dom'
 import { DragSource } from 'react-dnd';
 
 import { ReadDropContainer } from './ReadDropContainer';
-import { Note } from './Note';
+import { NoteContainer } from './NoteContainer';
 import { SubReads } from './SubReads';
 
 class Read extends React.Component { //Read
   constructor(props) {
     super(props);
 
-    this.setNoteRef = this.setNoteRef.bind(this);
     this.handleClick = this.handleClick.bind(this);
     this.handleDoubleClick = this.handleDoubleClick.bind(this);
-    this.handlePrimerClick = this.handlePrimerClick.bind(this);
-    this.handlePositionTextChange = this.handlePositionTextChange.bind(this);
-  }
 
-  componentDidMount() {
-    const { path, user } = this.props;
-
-    const is_current = (user.current_read_id === path[0].id);
-
-    if (is_current) {
-      this.note && this.note.focus();
-    }
-  }
-
-  setNoteRef(ref) {
-    this.note = ref;
+    this.stageSubNote = this.stageSubNote.bind(this);
   }
 
   handleClick(event) {
-    console.log('click');
     event.stopPropagation();
+    console.log('click');
 
-    const { path, user, dispatch } = this.props;
+    const { user, note, path, dispatch } = this.props;
 
-    dispatch(currentNote(path[0], path[1], user));
+    dispatch(currentNote(user, note, path[0]));
   }
 
   handleDoubleClick(event) {
+    event.stopPropagation();
     console.log('doubleClick');
-    event.stopPropagation();
 
-    const { path, user, dispatch } = this.props;
+    const { user, note, path, dispatch } = this.props;
 
-    dispatch(frameNote(path[0], user));;
+    dispatch(frameNote(user, note, path[0]));;
   }
 
-  handlePrimerClick(event) {
+  stageSubNote(event) {
     event.stopPropagation();
 
-    const { path, user, dispatch } = this.props;
+    const { user, path, dispatch } = this.props;
 
-    dispatch(addNote(path[0], user));
-  }
-
-  handlePositionTextChange(editorState) {
-    const { path, note, dispatch } = this.props;
-
-    const contentState = editorState.getCurrentContent();
-    const text = contentState.getPlainText();
-
-    console.log('positionTextChange', text);
-
-    const note2 = Object.assign({}, note, {
-      position_text: text,
-      position_editorState: editorState,
-    });
-
-    const commit = false;
-    dispatch(setNote(path[0], note2, commit));
+    dispatch(stageNote(user, path[0]));
   }
 
   render() {
     //console.log('render Read', this.props);
     const {
-      path,
-      note,
       user,
+      note,
+      path,
       sub_reads,
       //
       is_drag,
@@ -150,8 +118,8 @@ class Read extends React.Component { //Read
         position: 'absolute',
         left: -6,
         top: -6,
-        width: 5,
-        height: 5,
+        width: 6,
+        height: 6,
         backgroundColor: (position === Positions.DOCK) ? 'white' : 'lightyellow',
         border: is_current
           ? '1px solid darkturquoise'
@@ -172,12 +140,6 @@ class Read extends React.Component { //Read
       },
     };
 
-    const index = (path[1] && ((path[1].properties.sub_read_ids || []).indexOf(path[0].id) + 1)) || 0; 
-
-    const sub_read_container = note.live
-      ? null
-      : <SubReads sub_reads={sub_reads} path={path} handlePrimerClick={this.handlePrimerClick} />;
-
     const content = (
       <div>
         {
@@ -188,18 +150,20 @@ class Read extends React.Component { //Read
                   is_frame ? null : <div style={style.point} />
                 }
                 <div style={style.index}>
-                  {index}
+                  {
+                    (path[1] && ((path[1].properties.sub_read_ids || []).indexOf(path[0].id) + 1)) || 0
+                  }
                 </div>
-                <Note
-                  ref={this.setNoteRef}
-                  note={note}
-                  handlePositionTextChange={this.handlePositionTextChange}
-                />
+                <NoteContainer user={user} note={note} path={path} />
               </div>
             </div>
           )
         }
-        {sub_read_container}
+        {
+          (note.write_id == null)
+            ? null
+            : <SubReads sub_reads={sub_reads} path={path} stageSubNote={this.stageSubNote} />
+        }
       </div>
     );
 
@@ -267,10 +231,12 @@ const noteDragSource = {
     return true;
   },
   beginDrag: (props, monitor, component) => {
-    const { path } = props;
+    const { user, note, path } = props;
     const clientRect = findDOMNode(component).getBoundingClientRect();
 
     const item = {
+      user,
+      note,
       path,
       clientRect,
     };  
