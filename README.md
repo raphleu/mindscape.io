@@ -3,7 +3,7 @@ the premier web outliner
 
 "Organize and share your notes!"
 
-check out the LIVE beta @ www.mindscap.io
+check out the LIVE beta @ www.mindscape.io
 
 
 Let's build an interface/editor that emphasizes the organization of not just the information within each note, but the relationships between them and as a whole. This means dissolving the distinction between note-taking and messaging. This means enabling a note to be easily reframed into different contexts.
