@@ -3,6 +3,8 @@ import React, { PropTypes } from 'react';
 import { DragDropContext } from 'react-dnd';
 import HTML5Backend from 'react-dnd-html5-backend';
 
+//import { ReadDragLayer } from './ReadDragLayer';
+
 class MainComponent extends React.Component {
   constructor(props) {
     super(props);

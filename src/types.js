@@ -40,10 +40,10 @@ module.exports = (function() {
       initial_time: null,
       final_time: null,
       // elapsed_time: the time spent writing!
-      position_text: '',
-      position_editorState: null,
-      momentum_text: '',
-      momentum_editorState: null,
+      text: '',
+      editorState: null,
+      meta_text: '',
+      meta_editorState: null,
       write_id: null,
       read_ids: [],
       link_ids: [],
@@ -64,6 +64,26 @@ module.exports = (function() {
         direction: Directions.DOWN,
         radius: 1600,
         sub_read_ids: [],
+      },
+    },
+    LINK: {
+      id: null,
+      start: null,
+      end: null,
+      type: Relationships.LINK,
+      properties: {
+        initial_time: null,
+        final_time: null,
+        at_start: {
+          position: Positions.DOCK,
+          x: 0,
+          y: 0,
+        },
+        at_end: {
+          position: Positions.DOCK,
+          x: 0,
+          y: 0,
+        },
       },
     },
   };

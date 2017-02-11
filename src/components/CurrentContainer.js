@@ -3,13 +3,39 @@ import { connect } from 'react-redux';
 
 import { Displays, Positions } from '../types';
 
+import { deleteNote } from '../actions';
+ 
 class Current extends React.Component {
   constructor(props) {
     super(props);
+
+    this.state = {
+      show_links: 'all',
+    };
+
+    this.handleDelete = this.handleDelete.bind(this);
+
+    this.showLinks = this.showLinks.bind(this);
+  }
+
+  handleDelete(event) {
+    if(confirm('delete this note?')) {
+      const { user, note, path, dispatch } = this.props;
+
+      dispatch(deleteNote(user, note, path[0]));
+    }
+  }
+  showLinks(mode) {
+    return (event) => {
+      this.setState({
+        show_links: mode,
+      });    
+    };
   }
 
   render() {
     const { user, path, note, write, reads, links } = this.props;
+    const { show_links } = this.state;
 
     if (user == null) {
       return null;
@@ -22,35 +48,142 @@ class Current extends React.Component {
         marginTop: 0,
         backgroundColor: 'white',
       },
+      section: {
+        margin: 2,
+        border: '1px solid lavender',
+        padding: 2,
+      },
+      label: {
+        borderBottom: '1px: solid lavender',
+        color: 'darkturquoise',
+      },
+      buttons: {
+        display: 'block',
+      },
+      button: {
+        display: 'inline-block',
+        margin: 2,
+        border: '1px solid darkgrey',
+        borderTopRightRadius: 2,
+        borderBottomLeftRadius: 2,
+        cursor: 'pointer',
+      },
+      button_liner: {
+        border: '1px solid azure',
+        borderTopRightRadius: 2,
+        borderBottomLeftRadius: 2,
+        padding: 2,
+        backgroundColor: 'white',
+        color: 'darkgrey',
+      },
+      link: {
+        border: '1px solid lavender',
+
+      }
     };
 
-    const position = (path[1] == null || path[1].properties.display === Displays.SEQUENCE)
-      ? Positions.DOCK
-      : path[0].properties.position;
+    style.factor_button = style.button;
+    style.product_button = style.button;
+    style.all_button = style.button;
+
+    function activate(button_style) {
+      Object.assign(button_style, {
+        backgroundColor: 'azure'
+      });
+    }
+
+    let displayed_links;
+
+    if (show_links === 'all') {
+      displayed_links = links;
+      activate(style.all_button);
+    }
+    else {
+      const factor_links = [];
+      const product_links = [];
+      links.forEach(link => {
+        if (link.start === note.id) {
+          product_links.push(link);
+        }
+        else {
+          factor_links.push(link);
+        }
+      });
+
+      if (show_links === 'factors') {
+        displayed_links = factor_links;
+        activate(style.factor_button);
+      }
+      else {
+        displayed_links = product_links;
+        activate(style.product_button);
+      }
+    }
 
     return (
       <div className='current' style={style.main}>
         CURRENT
-        <div>
-          note_id: {note.id}
+        <div onClick={this.handleDelete}>
+          delete
         </div>
-        <div>
-          author_id: {write && write.start}
+        <div style={style.section} >
+          <div style={style.label}>
+            author_id
+          </div>
+          <div>
+            {write && write.start || user.id}
+          </div>
         </div>
-        <div>
-          path: {path.map(read => read.id).join(' < ')}
+        <div style={style.section} >
+          <div style={style.label}>
+            note_id
+          </div>
+          <div>
+            {note.id}
+          </div>
         </div>
-        <div>
-          position: {position}
+        <div style={style.section} >
+          <div style={style.label}>
+            path
+          </div>
+          <div>
+            {path.map(read => read.id).join(' < ')}
+          </div>
         </div>
-        <div>
-          display: {path[0].properties.display}
+        <div style={style.section} >
+          <div style={style.label}>
+            read_count
+          </div>
+          <div>
+            {reads.length}
+          </div>
         </div>
-        <div>
-          read_count: {reads.length}
-        </div>
-        <div>
-          links: [{links.map(link => link.id).join(', ')}]
+        <div style={style.section} >
+          <div style={style.label}>
+            links
+          </div>
+          <div>
+            <div style={style.buttons}>
+              <div style={style.factor_button} onClick={this.showLinks('factors')}>
+                factors
+              </div>
+              <div style={style.product_button} onClick={this.showLinks('products')}>
+                products
+              </div>
+              <div style={style.all_button} onClick={this.showLinks('all')}>
+                all
+              </div>
+            </div>
+            {
+              links.map(link => {
+                return (
+                  <div key={'link-'+link.id} style={style.link} > 
+                    link
+                  </div>
+                );
+              })
+            }
+          </div>
         </div>
       </div>
     );
@@ -99,10 +232,5 @@ function getStateProps(state) {
     links,
   };
 }
-function getDispatchProps(dispatch) {
-  return {
 
-  };
-}
-
-export const CurrentContainer = connect(getStateProps, getDispatchProps)(Current);
+export const CurrentContainer = connect(getStateProps)(Current);

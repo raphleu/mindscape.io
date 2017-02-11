@@ -19,34 +19,8 @@ export class Notation extends React.Component {
   render() {
     const { fetching, frame_reads } = this.props;
 
-    const style = {
-      main: {
-        display: 'block',
-        whiteSpace: 'nowrap',
-      },
-      dashboard: {
-        zIndex: 8,
-        display: 'inline-block',
-        verticalAlign: 'top',
-        position: 'fixed',
-        margin: 2,
-        border: '1px solid steelblue',
-        borderTopLeftRadius: 4,
-        borderBottomRightRadius: 4,
-      },
-      dashboard_liner: {
-        position: 'relative',
-        border: '1px solid azure',
-        borderTopLeftRadius: 4,
-        borderBottomRightRadius: 4,
-        padding: 4,
-        width: 152,
-        backgroundColor: 'white',
-        whiteSpace: 'normal',
-        overflow: 'auto',
-        textAlign: 'right',
-      },
-      fetch_indicator: {
+    const fetch_indicator = (
+      <div style={{
         //display: fetching ? 'block' : 'none',
         position: 'absolute',
         right: 0,
@@ -56,36 +30,53 @@ export class Notation extends React.Component {
         borderBottomRightRadius: 4,
         height: 12,
         width: 8,
-        backgroundColor: 'white'
-      },
-      spacer: {
-        display: 'inline-block',
-        width: 165,
-      },
-      frames: {
-        display: 'inline-block',
-      }
-    };
+        backgroundColor: 'white',
+      }} />
+    );
 
     const reads = frame_reads.map(frame_read => {
-      const path = [frame_read];
-      return (
-        <ReadContainer key={'read-'+path[0].id} path={path} />
-      );
+      return <ReadContainer key={'read-'+frame_read.id} path={ [frame_read] } />;
     });
     // TODO add current_read info to dashboard
     return (
-      <div className='notation' style={ style.main }>
-        <div style={style.dashboard}>
-          <div style={style.dashboard_liner}>
-            <div style={style.fetch_indicator} />
+      <div className='notation' style={{
+        display: 'block',
+        whiteSpace: 'nowrap',
+      }}>
+        <div className='dashboard' style={{
+          zIndex: 8,
+          display: 'inline-block',
+          verticalAlign: 'top',
+          position: 'fixed',
+          margin: 2,
+          border: '1px solid steelblue',
+          borderTopLeftRadius: 4,
+          borderBottomRightRadius: 4,
+        }}>
+          <div className='dashboard-content' style={{
+            position: 'relative',
+            border: '1px solid azure',
+            borderTopLeftRadius: 4,
+            borderBottomRightRadius: 4,
+            padding: 4,
+            width: 152,
+            backgroundColor: 'white',
+            whiteSpace: 'normal',
+            overflow: 'auto',
+            textAlign: 'left',
+          }}>
             <AuthContainer />
             <CurrentContainer />
           </div>
         </div>
-        <div style={style.spacer}></div>
-        <div style={style.frames}>
-          {reads}
+        <div className='spacer' style={{
+          display: 'inline-block',
+          width: 165,
+        }}/>
+        <div className='frames' style={{
+          display: 'inline-block',
+        }}>
+          { reads }
         </div>
       </div>
     );

@@ -19,8 +19,6 @@ export function initialize() {
   return dispatch => {
     fetchState(dispatch, initialize_url, {}, comment)
       .then(state => {
-        console.log(state);
-
         dispatch(setLocalState(state, comment));
 
         // save some state to local storage (user_ids, token_by_id)
@@ -32,15 +30,15 @@ export function initialize() {
   };
 }
 
-export function stageNote(author, super_read) {
+export function stageNote(author, super_note, super_read) {
   let comment = 'stage note';
   return dispatch => {
         // allocate temp_ids
     let timestamp = Date.now();
-    const note_id = 'temp-' + timestamp;
+    const link_id = 'temp-' + timestamp;
 
     timestamp++;
-    const write_id = 'temp-' + timestamp;
+    const note_id = 'temp-' + timestamp;
 
     timestamp++;
     const read_id = 'temp-' + timestamp;
@@ -53,9 +51,16 @@ export function stageNote(author, super_read) {
         [note_id]: Object.assign({}, Defaults.Note, {
           id: note_id,
           read_ids: [read_id],
+          link_ids: [link_id],
         }),
       },
       relationship_by_id: {
+        [link_id]: Object.assign({}, Defaults.LINK, {
+          id: link_id,
+          start: super_note.id,
+          end: note_id,
+          //properties: Object.assign({}, Defaults.LINK.properties, {}),
+        }),
         [read_id]: Object.assign({}, Defaults.READ, {
           id: read_id,
           start: note_id,
@@ -111,7 +116,7 @@ export function setNote(author, note, read) {
     dispatch(setLocalState(update, comment));
 
     // TODO strip out position_editorState on the client-side?
-    
+
     if (note.write_id) { // if note is committed
       fetchState(dispatch, update_url, {author, update}, comment); 
     }
@@ -147,7 +152,7 @@ export function commitNote(author, note, read) {
   };
 }
 
-export function deleteNote(note, read) {
+export function deleteNote(author, note, read) {
   let comment = 'delete note';
   return dispatch => {
     const update = {
@@ -275,15 +280,17 @@ function fetchState(dispatch, url, params, comment) {
         .then(json => {
           if (response.ok) { 
             dispatch(fetchStateSuccess(url, params, json.data, comment));
+            return json.data;
           }
           else {
             throw Error(json.data);
           }
-          return json.data;
         });
     })
     .catch(error => {
       dispatch(fetchStateFailure(url, params, error, comment));
+
+      return null;
     });
 
   function fetchStateRequest(url, params, comment) {

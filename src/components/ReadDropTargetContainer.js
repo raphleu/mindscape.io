@@ -12,7 +12,7 @@ import { DropTarget } from 'react-dnd';
 import { findDOMNode } from 'react-dom'
 
 
-class ReadDrop extends React.Component { // aka AddNote
+class ReadDropTarget extends React.Component { // aka AddNote
   constructor(props) {
     super(props);
   }
@@ -20,24 +20,23 @@ class ReadDrop extends React.Component { // aka AddNote
   render() {
     const { style, is_over, connectDropTarget, children } = this.props;
 
-    let style2 = Object.assign({}, style, {
-      border: is_over ? '1px solid darkturquoise' : style.border
-    });
-
     return connectDropTarget(
-      <div className='read-drop' style={style2}>
+      <div className='read-drop'
+        style={{
+          border: is_over ? '2px solid darkturquoise' : 'none',
+        }}
+      >
         {children}
       </div>
     );
   } 
 }
 
-ReadDrop.propTypes = {
+ReadDropTarget.propTypes = {
   // ownProps
   path: PropTypes.arrayOf(PropTypes.object), // path has all super_reads; readout would have all sub_reads
   depth: PropTypes.number,
   item_position: PropTypes.string,
-  style: PropTypes.object,
   // dispatch 
   setState: PropTypes.func,
   // drag n drop
@@ -73,11 +72,14 @@ const dropTarget = {
     if (monitor.didDrop() || !monitor.canDrop()) {
       return;
     }
+    console.log('drop', props)
 
     const { user, path, depth, item_position, dispatch } = props; // target props
     const target_clientRect = findDOMNode(component).getBoundingClientRect();
 
     const item = monitor.getItem();
+
+    const change_super_read = (item.path[1].id !== path[depth].id);
 
     const read = Object.assign({}, item.path[0], {
       properties: Object.assign({}, item.path[0].properties, {
@@ -89,14 +91,7 @@ const dropTarget = {
     let prev_super_read;
     let super_read;
 
-    const change_super_read = (item.path[1].id !== path[depth].id);
-
-    if (change_super_read) {
-      prev_super_read = filterSubRead(item.path[1], item.path[0]);
-      super_read = Object.assign({}, path[depth]);      
-    }
-
-    if (depth === 0) { // if target == super
+    if (depth === 0) { // if dropping item into target (taking target as super)
       if (read.properties.position === Positions.DOCK) {
         if (change_super_read) {
           read.properties.x = 0;
@@ -111,10 +106,15 @@ const dropTarget = {
       }
 
       if (change_super_read) {
+        prev_super_read = filterSubRead(item.path[1], item.path[0]);
+
+        super_read = Object.assign({}, path[depth]);     
         super_read.properties.sub_read_ids.unshift(item.path[0].id);
       }
     }
-    else if (depth === 1) {
+    else if (depth === 1) { // if dropping item into target's super (taking target as neighbor)
+      // insert before target, if drop in upper half
+      // inser after target, if drop in lower half
       const target_clientMiddleY = target_clientRect.top + (target_clientRect.bottom - target_clientRect.top) / 2;
       const cursor_clientOffset = monitor.getClientOffset();
 
@@ -131,9 +131,17 @@ const dropTarget = {
         read.properties.y = insert_before_target
           ? Math.max(path[0].properties.y - item.clientRect.height - 2, 0)
           : path[0].properties.y + target_clientRect.height + 2; //TODO make sure within bounds
+        // TODO handle case where item originates from inside target (target will shrink, top of item will not be aligned)
       }
 
       if (change_super_read) {
+        prev_super_read = filterSubRead(item.path[1], item.path[0]);
+
+        super_read = Object.assign({}, path[depth]);      
+        super_read = insertSubRead(super_read, read, path[0], insert_before_target);
+      }
+      else {
+        super_read = filterSubRead(item.path[1], item.path[0]);
         super_read = insertSubRead(super_read, read, path[0], insert_before_target);
       }
     }
@@ -160,7 +168,7 @@ function insertSubRead(read, insert_sub_read, target_sub_read, insert_before_tar
   return read2;
 }
 
-export const ReadDropContainer = flow(
+export const ReadDropTargetContainer = flow(
   DropTarget(DragTypes.READ, dropTarget, getDropTargetProps),
   connect(),
-)(ReadDrop);
+)(ReadDropTarget);

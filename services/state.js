@@ -69,8 +69,8 @@ function state(util) {
         registered: false,
       },
       root_props: {
-        position_text: 'root',
-        momentum_text: null,
+        text: 'root',
+        text2: null,
       },
       write_props: Object.assign({}, Defaults.READ.properties, {
         display: Displays.PLANE,
@@ -95,7 +95,7 @@ function state(util) {
         author,
         note
     `;
-    return util.query(query, params, true)
+    return util.query(query, params)
       .then(results => results[0].author);
   }
 
@@ -174,7 +174,7 @@ function state(util) {
         }) AS units      
     `;
 
-    return util.query(query, params, true)
+    return util.query(query, params)
       .then(results => {
         return results[0]
       });
@@ -265,8 +265,8 @@ function state(util) {
       WHERE
         id(note) = note2.id
       SET
-        note.position_text = note2.position_text,
-        note.momentum_text = note2.momentum_text,
+        note.text = note2.text,
+        note.meta_text = note2.meta_text,
         note.final_time = timestamp()
       RETURN
         note
@@ -302,8 +302,8 @@ function state(util) {
       SET
         user.current_read_id = id(read),
         super_read.sub_read_ids = [id(read)] + super_read.sub_read_ids,
-        note.position_text = unit.note.position_text,
-        note.momentum_text = unit.note.momentum_text,
+        note.text = unit.note.text,
+        note.meta_text = unit.note.meta_text,
         note.initial_time = timestamp(),
         write += unit.read.properties,
         write.initial_time = timestamp(),
@@ -319,7 +319,7 @@ function state(util) {
           links: []
         }) AS units
     `;
-    return util.query(query, params, true)
+    return util.query(query, params)
       .then(results => {
         const initial_state = {
           node_by_id: {

@@ -1,9 +1,9 @@
 import React, { PropTypes } from 'react';
 import { connect } from 'react-redux'; 
 
-import { DisplayModes } from '../types';
+import { Positions, Displays } from '../types';
 
-import { cancelNote, setNote, commitNote } from '../actions';
+import { cancelNote, setNote, commitNote, currentNote } from '../actions';
 
 import { Editor, EditorState, ContentState } from 'draft-js';
 
@@ -15,16 +15,20 @@ class Note extends React.Component {
 
     if (note.write_id == null) {
       this.state = {
-        position_editorState: note.position_editorState
-          ? note.position_editorState
+        editorState: note.editorState
+          ? note.editorState
           : EditorState.createEmpty(),
       };
     }
+    else {
+      this.state = {};
+    }
 
-    this.setPositionTextEditorRef = this.setPositionTextEditorRef.bind(this);
+    this.setEditorRef = this.setEditorRef.bind(this);
 
-    this.getNoteWithEditorState = this.getNoteWithEditorState.bind(this);
+    this.getEditedNote = this.getEditedNote.bind(this);
 
+    this.handleClick = this.handleClick.bind(this);
     this.handleCancel = this.handleCancel.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.handleCommit = this.handleCommit.bind(this);
@@ -34,27 +38,37 @@ class Note extends React.Component {
     const { user, note, path } = this.props;
 
     if (note.write_id == null && user.current_read_id === path[0].id) {
-      this.position_textEditor.focus();
+      this.editor.focus();
     }
   }
 
-  setPositionTextEditorRef(ref) {
-    this.position_textEditor = ref;
+  setEditorRef(ref) {
+    this.editor = ref;
   }
 
-  getNoteWithEditorState() {
+  getEditedNote() {
     const { note } = this.props;
-    const { position_editorState } = this.state;
+    const { editorState } = this.state;
 
-    const position_contentState = position_editorState.getCurrentContent();
-    const position_text = position_contentState.getPlainText();
+    const contentState = editorState.getCurrentContent();
+    const text = contentState.getPlainText();
 
-    console.log('positionText', '@'+position_text+'@');
+    console.log('text', '@'+text+'@');
 
     return Object.assign({}, note, {
-      position_text,
-      position_editorState,
+      text,
+      editorState,
     });
+  }
+
+  handleClick(event) {
+    const { user, note, path, dispatch } = this.props;
+
+    if (note.write_id == null) {
+      event.stopPropagation(); // prevent read-drag, so we can hilight text!
+
+      dispatch(currentNote(user, note, path[0]));
+    }
   }
 
   handleCancel(event) {
@@ -73,9 +87,9 @@ class Note extends React.Component {
     clearTimeout(timer_id);
 
     this.setState({
-      position_editorState: editorState,
+      editorState: editorState,
       timer_id: setTimeout(() => {
-        const note = this.getNoteWithEditorState();
+        const note = this.getEditedNote();
 
         dispatch(setNote(user, note, path[0]));
       }, 1000),
@@ -88,102 +102,165 @@ class Note extends React.Component {
 
     clearTimeout(timer_id);
 
-    const note = this.getNoteWithEditorState();
+    const note = this.getEditedNote();
     
     dispatch(commitNote(user, note, path[0]))
   }
 
   render() {
-    //console.log('render Note', note)
-    const { note } = this.props;
+    //console.log('render Note', this.props)
+    const { user, note, path, connectDragSource } = this.props;
+    const { editorState } = this.state;
 
     // TODO on read.properties.mode == minimized, display text up to first double newline
     const style = {
-      main: {
-        display: 'inline-block',
-        margin: 2,
-        border: (note.write_id == null) ? '1px solid darkturquoise' : 'none',
-        borderTopRightRadius: 2,
-        borderBottomLeftRadius: 2,
-        padding: 2,
-        backgroundColor: 'white',
-        whiteSpace: 'nowrap',
-      },
-      position: {
-        display: 'inline-block',
-        padding: 2,
+      text_content: {
         minWidth: 200,
-        cursor: (note.write_id == null) ? 'text' : 'pointer',
-      },
-      buttons: {
-        display: 'inline-block',
       },
       button: {
         display: 'inline-block',
         margin: 2,
-        border: '1px solid lavender',
+        border: '1px solid darkgrey',
         borderTopRightRadius: 2,
         borderBottomLeftRadius: 2,
+        cursor: 'pointer',
+        color: 'darkgrey',
       },
-      button_liner: {
+      button_content: {
         border: '1px solid azure',
         borderTopRightRadius: 2,
         borderBottomLeftRadius: 2,
         padding: 2,
         backgroundColor: 'white',
-        color: 'darkgrey',
-      }
+      },
     };
+    style.commit_button = Object.assign({}, style.button, {
+      borderColor: 'darkorchid',
+      color: 'darkorchid'
+    });
 
-    let position;
-    let commit_or_cancel;
-    if (note.write_id == null) {
-      const { position_editorState } = this.state;
+    const is_current = (user.current_read_id === path[0].id);
+    const is_frame = (user.frame_read_id === path[0].id);
+    const is_root = (user.root_read_id === path[0].id);
 
-      position = (
-        <Editor
-          ref={this.setPositionTextEditorRef}
-          editorState={position_editorState}
-          onChange={this.handleChange}
-        />
-      );
+    const position = (path[1] == null || path[1].properties.display === Displays.SEQUENCE)
+      ? Positions.DOCK
+      : path[0].properties.position;
 
-      commit_or_cancel = (
-        <div style={style.buttons}>
-          <div style={style.button} onClick={this.handleCommit}>
-            <div style={style.button_liner}>
+    const index = (path[1] && ((path[1].properties.sub_read_ids || []).indexOf(path[0].id) + 1)) || 0;
+
+    const text_content = (note.write_id == null) ? (
+      <div className='text-content' style={style.text_content}>
+        <div className='editor' style={{
+          display:'inline-block',
+          verticalAlign: 'middle',
+          minWidth: 100,
+          cursor: 'text',
+        }}>
+          <Editor ref={this.setEditorRef} editorState={editorState} onChange={this.handleChange} />
+        </div>
+        <div className='editor-controls' style={{
+          display: 'inline-block',
+          verticalAlign: 'bottom',
+        }}>
+          <div className='commit' onClick={this.handleCommit} style={style.commit_button}>
+            <div style={style.button_content}>
               commit
             </div>
           </div>
-          <div style={style.button} onClick={this.handleCancel}>
-            <div style={style.button_liner}>
+          <div className='cancel' onClick={this.handleCancel} style={style.button}>
+            <div style={style.button_content}>
               cancel
             </div>
           </div>
         </div>
-      );
-    }
-    else {
-      position = note.position_text;
-    }
-    // TODO add momentum_text, with toggle
-
-    return (
-      <div id={'note-'+note.id} style={style.main}>
-        <div style={style.position}>
-          {position}
-        </div>
-        {commit_or_cancel}
+      </div>
+    ) : (
+      <div className='text-content' style={style.text_content}>
+        { note.text }
       </div>
     );
+
+    const main = (
+      <div id={'note-'+note.id} className='note' style={{
+        border: '1px solid lavender',
+        borderTopRightRadius: 4,
+        borderBottomLeftRadius: 4,
+        minWidth: 200,
+        cursor: '-webkit-grab',
+      }}>
+        <div className='note-content' style={{
+          position: 'relative',
+          border: '2px solid azure',
+          borderTopRightRadius: 4,
+          borderBottomLeftRadius: 4,
+          backgroundColor: 'white',
+        }}>
+          {
+            is_frame ? null : (
+              <div className='point' style={{
+                zIndex: 5,
+                position: 'absolute',
+                left: -6,
+                top: -6,
+                width: 6,
+                height: 6,
+                backgroundColor: (position === Positions.DOCK) ? 'white' : 'lightyellow',
+                border: is_current
+                  ? '1px solid darkturquoise'
+                  : (is_root 
+                    ? '1px solid darkorchid'
+                    : (is_frame
+                      ? '1px solid steelblue'
+                      : ((position === Positions.DOCK) ? '1px solid lavender' : '1px solid gold'))),
+                borderRadius: 2,
+              }}/>
+            )
+          }
+          <div className='index' style={{
+            display: 'inline-block',
+            color: is_current
+              ? 'darkturquoise'
+              : (is_root
+                ? 'darkorchid'
+                : (is_frame ? 'steelblue' : 'lavender')),
+            margin: 2,
+            marginLeft: 4,
+          }} >
+            { index }
+          </div>
+          <div className='text' onClick={this.handleClick} style={{
+            display: 'inline-block',
+            margin: 2,
+            border: (note.write_id == null) ? '1px solid darkturquoise' : 'none',
+            borderTopRightRadius: 4,
+            borderBottomLeftRadius: 4,
+            padding: 2,
+            backgroundColor: 'white',
+            whiteSpace: 'nowrap',
+            cursor: (note.write_id == null) ? 'default' : '-webkit-grab',
+          }}>
+            { text_content }
+          </div>
+        </div>
+      </div>
+    );
+
+    if (is_frame) {
+      return main;
+    }
+    else {
+      return connectDragSource(main);
+    }
   }
 }
 
 Note.propTypes = {
-  user: PropTypes.object,
-  note: PropTypes.object,
-  path: PropTypes.arrayOf(PropTypes.object),
-  dispatch: PropTypes.func,
+  user: PropTypes.object.isRequired,
+  note: PropTypes.object.isRequired,
+  path: PropTypes.arrayOf(PropTypes.object).isRequired,
+  connectDragSource: PropTypes.func,
+  dispatch: PropTypes.func.isRequired,
 };
 
 export const NoteContainer = connect()(Note);
