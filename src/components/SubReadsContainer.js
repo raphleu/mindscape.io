@@ -120,7 +120,7 @@ export class SubReads extends React.Component { //SubReadsContainer
         margin: 2,
         //marginTop: 0,
         paddingLeft: 6,
-        border: '1px solid lavender',
+        border: is_sequence ? 'none' : '1px solid lavender',
         borderBottomLeftRadius: 2,
         borderTopRightRadius: 2,
       }}>

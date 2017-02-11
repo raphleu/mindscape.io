@@ -43,7 +43,7 @@ class Read extends React.Component { //Read
   }
 
   render() {
-    console.log('render Read', this.props);
+    //console.log('render Read', this.props);
     const {
       user,
       note,
@@ -67,7 +67,10 @@ class Read extends React.Component { //Read
       ? Directions.DOWN
       : path[1].properties.direction;
 
-    const show_subs = (note.write_id != null);
+    const is_sequence = path[0].properties.display === Displays.SEQUENCE;
+    const is_plane = path[0].properties.display === Displays.PLANE;
+
+    const show_subs = (is_sequence || is_plane) && (note.write_id != null);
 
     const content = (
       <div className='read-content' style={{
@@ -81,7 +84,7 @@ class Read extends React.Component { //Read
         width: is_frame ? '100%' : 'auto',
       }}>
         <NoteContainer user={user} note={note} path={path} connectDragSource={connectDragSource}/>
-        
+
         { show_subs ? <SubReadsContainer user={user} note={note} path={path} sub_reads={sub_reads} /> : null }
       </div>
     );

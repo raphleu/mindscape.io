@@ -41,6 +41,9 @@ class Current extends React.Component {
       return null;
     }
 
+    const is_root = (path[0].id === user.root_read_id);
+    const is_frame = (path[0].id === user.frame_read_id);
+
     const style = {
       main: {
         display: 'block',
@@ -68,7 +71,7 @@ class Current extends React.Component {
         borderBottomLeftRadius: 2,
         cursor: 'pointer',
       },
-      button_liner: {
+      button_content: {
         border: '1px solid azure',
         borderTopRightRadius: 2,
         borderBottomLeftRadius: 2,
@@ -78,17 +81,17 @@ class Current extends React.Component {
       },
       link: {
         border: '1px solid lavender',
-
       }
     };
 
-    style.factor_button = style.button;
-    style.product_button = style.button;
-    style.all_button = style.button;
+    style.factor_button = Object.assign({}, style.button);
+    style.product_button = Object.assign({}, style.button);
+    style.all_button = Object.assign({}, style.button);
 
     function activate(button_style) {
       Object.assign(button_style, {
-        backgroundColor: 'azure'
+        border: '2px solid darkturquoise',
+        color: 'darkturquoise',
       });
     }
 
@@ -120,12 +123,20 @@ class Current extends React.Component {
       }
     }
 
+    const delete_button = (is_root || is_frame) ? null : (
+      <div style={{display: 'inline-block'}}>
+        <div style={style.button} onClick={this.handleDelete}>
+          <div style={style.button_content}>
+          delete
+          </div>
+        </div>
+      </div>
+    );
+
     return (
       <div className='current' style={style.main}>
         CURRENT
-        <div onClick={this.handleDelete}>
-          delete
-        </div>
+        { delete_button }
         <div style={style.section} >
           <div style={style.label}>
             author_id
@@ -150,28 +161,35 @@ class Current extends React.Component {
             {path.map(read => read.id).join(' < ')}
           </div>
         </div>
-        <div style={style.section} >
+        <div style={style.section}>
           <div style={style.label}>
             read_count
           </div>
           <div>
-            {reads.length}
+            { reads.length }
           </div>
         </div>
-        <div style={style.section} >
+        <div style={style.section}>
           <div style={style.label}>
             links
           </div>
           <div>
             <div style={style.buttons}>
               <div style={style.factor_button} onClick={this.showLinks('factors')}>
-                factors
+                <div style={style.button_content}>
+                  factors
+                </div>
+
               </div>
               <div style={style.product_button} onClick={this.showLinks('products')}>
-                products
+                <div style={style.button_content}>
+                  products
+                </div>
               </div>
               <div style={style.all_button} onClick={this.showLinks('all')}>
-                all
+                <div style={style.button_content}>
+                  all
+                </div>
               </div>
             </div>
             {

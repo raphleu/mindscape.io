@@ -149,19 +149,66 @@ class Note extends React.Component {
 
     const index = (path[1] && ((path[1].properties.sub_read_ids || []).indexOf(path[0].id) + 1)) || 0;
 
+    const handles = (
+      <div style={{display: 'inline-block'}}>
+        {
+          is_frame ? null : (
+            <div className='point' style={{
+              zIndex: 5,
+              position: 'absolute',
+              left: -6,
+              top: -6,
+              width: 6,
+              height: 6,
+              backgroundColor: (position === Positions.DOCK) ? 'white' : 'lightyellow',
+              border: is_current
+                ? '1px solid darkturquoise'
+                : (is_root 
+                  ? '1px solid darkorchid'
+                  : (is_frame
+                    ? '1px solid steelblue'
+                    : ((position === Positions.DOCK) ? '1px solid lavender' : '1px solid gold'))),
+              borderRadius: 2,
+            }}/>
+          )
+        }
+        <div className='index' style={{
+          display: 'inline-block',
+          verticalAlign: 'middle',
+          color: is_current
+            ? 'darkturquoise'
+            : (is_root
+              ? 'darkorchid'
+              : (is_frame ? 'steelblue' : 'lavender')),
+          margin: 2,
+          marginLeft: 4,
+        }} >
+          { index }
+        </div>
+      </div>
+    );
+
+    let handles2;
+    if (is_frame) {
+      handles2 = handles;
+    }
+    else {
+      handles2 = (note.write_id == null) ? connectDragSource(handles) : handles;
+    }
+
     const text_content = (note.write_id == null) ? (
       <div className='text-content' style={style.text_content}>
         <div className='editor' style={{
           display:'inline-block',
           verticalAlign: 'middle',
-          minWidth: 100,
+          minWidth: 200,
           cursor: 'text',
         }}>
           <Editor ref={this.setEditorRef} editorState={editorState} onChange={this.handleChange} />
         </div>
         <div className='editor-controls' style={{
           display: 'inline-block',
-          verticalAlign: 'bottom',
+          verticalAlign: 'bottom'
         }}>
           <div className='commit' onClick={this.handleCommit} style={style.commit_button}>
             <div style={style.button_content}>
@@ -196,39 +243,7 @@ class Note extends React.Component {
           borderBottomLeftRadius: 4,
           backgroundColor: 'white',
         }}>
-          {
-            is_frame ? null : (
-              <div className='point' style={{
-                zIndex: 5,
-                position: 'absolute',
-                left: -6,
-                top: -6,
-                width: 6,
-                height: 6,
-                backgroundColor: (position === Positions.DOCK) ? 'white' : 'lightyellow',
-                border: is_current
-                  ? '1px solid darkturquoise'
-                  : (is_root 
-                    ? '1px solid darkorchid'
-                    : (is_frame
-                      ? '1px solid steelblue'
-                      : ((position === Positions.DOCK) ? '1px solid lavender' : '1px solid gold'))),
-                borderRadius: 2,
-              }}/>
-            )
-          }
-          <div className='index' style={{
-            display: 'inline-block',
-            color: is_current
-              ? 'darkturquoise'
-              : (is_root
-                ? 'darkorchid'
-                : (is_frame ? 'steelblue' : 'lavender')),
-            margin: 2,
-            marginLeft: 4,
-          }} >
-            { index }
-          </div>
+          { handles2 }
           <div className='text' onClick={this.handleClick} style={{
             display: 'inline-block',
             margin: 2,
@@ -250,7 +265,9 @@ class Note extends React.Component {
       return main;
     }
     else {
-      return connectDragSource(main);
+      const main2 = (note.write_id == null) ? main : connectDragSource(main);
+
+      return main2;
     }
   }
 }
