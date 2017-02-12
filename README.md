@@ -2,7 +2,7 @@
 
 the premier web outliner
 
-an app for writing/reading notes, where you link up your notes arrows to form webs, so you can collapse the neighborhood of a note into an outline under that note. So you can have different outlinings of the same stuff. 
+an app for writing/reading notes, where you link your notes together with arrows to form a web, so you can collapse the neighborhood of a note into an outline under that note. So you can have different outlinings of the same stuff. 
 
 check out the live beta @ www.mindscape.io
 
