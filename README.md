@@ -7,41 +7,44 @@ an app for writing/reading notes, where you link up your notes arrows to form we
 check out the live beta @ www.mindscape.io
 
 ### the Motivation
-*It's hard to organize my notes so that I can keep track of everything as an integrated, curated whole.
-  *I rarely come back to old notes bc they're essentially all in a couple big piles, so it's not worth the effort to look through.
-  *I have separate piles for email, text messaging, fb messaging, fb posts, my academic writing, etc
-    *Within each pile, I have a little bit of organization, maybe notebooks or folders--but I can only view one folder at a time-- it's hard to tune what's in the display.
-*I want to organize my notes according to multiple schemas and switch quickly between them.
-  *I want to organize my notes in a hierarchy from most generic to most specific
-    *I want the hierarchy to be such that a note can fall under multiple super-notes at a time
-    *I want everyone's notes to be organized in a similar hierarchy, so we can compare corresponding areas
-  *I want to organize my notes according to the time of writing, like in a stream or journal.
-    *I want be able to set notes into future/past parts of the stream, like in a calendar.
-    *I want to look at the transformation of my notes over time, while they are displayed in a consistent manner.
-  *I want to organize everyone's notes according to the location they were taken
-    *I want everyone to be able to post notes this way, so I can get the local news and reach out to people nearby or in a specific place, like craigslist or tinder
-  *I want to organize my notes by who I've shared them with
-    *I want to organize my friends by what notes I've shared with them
-  *Different encodings/formats/ of the same data lend themselves better to different use cases
-    *e.g. SI units vs American units
-    *e.g. polar coordinates vs cartesian coordinates
-    *e.g. speaking vs writing
-    *e.g. printing vs writing
-    *e.g. electronic text vs analog text
-    *e.g. outlines vs essays
-    *e.g. a diagam, chart, graph, table, scatterplot, flowchart vs wrapping text
-    *e.g. english with mathematical notation vs pure english
-    *e.g. javascript vs c vs haskell vs whatever
-*Consciousness, language, and notation are super interesting
-  *Formations of matter/motion/energy propagate into me and through my internal media. Some of the information is lost/destroyed/dissipated by collision/friction with the fixed structures of my cognition, while other informations passes through the right holes, enter the right cycles, and are perpetuated internally, somtimes finding their way into my cosnsciousness, my expressions, and perhaps into other people.
-    *e.g. channeling energy into people at a party via the right music selection
-    *e.g. I can only see some part of the EM spectrum, only a certain size of thing, only things in the right language for my receptors/mind
-  *The filtration/mapping/reducing of experience into language seems to be an extension of the same processing of reality into experience. The mysteries of experience/consciousness may be approached by beginning with these simplified expressions. 
-  *It would be cool if we all produced mental maps (say as part of the school curriculum), for internal reflection, and for study in aggregate.
-*Organizing the Internet is key to promoting education and democracy.
-  *It would be like humanity gaining a nervous system, as opposed to things just happening by diffusion/osmosis
-    *Right now things are organized enough that we can use money as model for willpower and information, but I think things are messy to the point that money holds too much weight in politics
-  *Social media has been around since the first gesture was given and received, and the first word spoken, written, printed, telegraphed, broadcasted, etc. Internet is less about the wires and computers, and more about the infrastructure of information/energy storage and transfer
+1. It's hard to organize my notes so that I can keep track of everything as an integrated, curated whole.
+  1. I rarely come back to old notes bc they're essentially all in a couple big piles, so it's not worth the effort to look through.
+  1. I have separate piles for email, text messaging, fb messaging, fb posts, my academic writing, etc
+    1. Within each pile, I have a little bit of organization, maybe notebooks or folders--but I can only view one folder at a time-- it's hard to tune what's in the display.
+    
+2. I want to organize my notes according to multiple schemas and switch quickly between them.
+  1. I want to organize my notes in a hierarchy from most generic to most specific
+    1. I want the hierarchy to be such that a note can fall under multiple super-notes at a time
+    2. I want everyone's notes to be organized in a similar hierarchy, so we can compare corresponding areas
+  1. I want to organize my notes according to the time of writing, like in a stream or journal.
+    1. I want be able to set notes into future/past parts of the stream, like in a calendar.
+    2. I want to look at the transformation of my notes over time, while they are displayed in a consistent manner.
+  2. I want to organize everyone's notes according to the location they were taken
+    1. I want everyone to be able to post notes this way, so I can get the local news and reach out to people nearby or in a specific place, like craigslist or tinder
+  3. I want to organize my notes by who I've shared them with
+    1. I want to organize my friends by what notes I've shared with them
+  4. Different encodings/formats/ of the same data lend themselves better to different use cases
+    1. e.g. SI units vs American units
+    2. e.g. polar coordinates vs cartesian coordinates
+    3. e.g. speaking vs writing
+    4. e.g. printing vs writing
+    5. e.g. electronic text vs analog text
+    6. e.g. outlines vs essays
+    7. e.g. a diagam, chart, graph, table, scatterplot, flowchart vs wrapping text
+    8. e.g. english with mathematical notation vs pure english
+    9. e.g. javascript vs c vs haskell vs whatever
+    
+3. Consciousness, language, and notation are super interesting
+  1. Formations of matter/motion/energy propagate into me and through my internal media. Some of the information is lost/destroyed/dissipated by collision/friction with the fixed structures of my cognition, while other informations passes through the right holes, enter the right cycles, and are perpetuated internally, somtimes finding their way into my cosnsciousness, my expressions, and perhaps into other people.
+    1. e.g. channeling energy into people at a party via the right music selection
+    2. e.g. I can only see some part of the EM spectrum, only a certain size of thing, only things in the right language for my receptors/mind
+  2. The filtration/mapping/reducing of experience into language seems to be an extension of the same processing of reality into experience. The mysteries of experience/consciousness may be approached by beginning with these simplified expressions. 
+  3. It would be cool if we all produced mental maps (say as part of the school curriculum), for internal reflection, and for study in aggregate.
+  
+4. Organizing the Internet is key to promoting education and democracy.
+  1. It would be like humanity gaining a nervous system, as opposed to things just happening by diffusion/osmosis
+    1. Right now things are organized enough that we can use money as model for willpower and information, but I think things are messy to the point that money holds too much weight in politics
+  2. Social media has been around since the first gesture was given and received, and the first word spoken, written, printed, telegraphed, broadcasted, etc. Internet is less about the wires and computers, and more about the infrastructure of information/energy storage and transfer
 
 
 ### the Plan
