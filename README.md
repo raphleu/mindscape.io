@@ -119,10 +119,12 @@ check out the live beta @ www.mindscape.io
 
 11. Make sure strong AI works out for us.
 
-12. Get humanity going on multiple planets.
+13. Master genetic manipulations.
 
-13. ???
+14. Get humanity going on multiple planets.
 
-14. Profit.
+15. ???
 
-15. Dissolve into everything.
+16. Profit.
+
+17. Dissolve.
