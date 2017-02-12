@@ -1,13 +1,50 @@
 # mindscape.io
+
 the premier web outliner
 
-"Organize and share your notes!"
+an app for writing/reading notes, where you link up your notes arrows to form webs, so you can collapse the neighborhood of a note into an outline under that note. So you can have different outlinings of the same stuff. 
 
-check out the LIVE beta @ www.mindscape.io
+check out the live beta @ www.mindscape.io
+
+### the Motivation
+*It's hard to organize my notes so that I can keep track of everything as an integrated, curated whole.
+  *I rarely come back to old notes bc they're essentially all in a couple big piles, so it's not worth the effort to look through.
+  *I have separate piles for email, text messaging, fb messaging, fb posts, my academic writing, etc
+    *Within each pile, I have a little bit of organization, maybe notebooks or folders--but I can only view one folder at a time-- it's hard to tune what's in the display.
+*I want to organize my notes according to multiple schemas and switch quickly between them.
+  *I want to organize my notes in a hierarchy from most generic to most specific
+    *I want the hierarchy to be such that a note can fall under multiple super-notes at a time
+    *I want everyone's notes to be organized in a similar hierarchy, so we can compare corresponding areas
+  *I want to organize my notes according to the time of writing, like in a stream or journal.
+    *I want be able to set notes into future/past parts of the stream, like in a calendar.
+    *I want to look at the transformation of my notes over time, while they are displayed in a consistent manner.
+  *I want to organize everyone's notes according to the location they were taken
+    *I want everyone to be able to post notes this way, so I can get the local news and reach out to people nearby or in a specific place, like craigslist or tinder
+  *I want to organize my notes by who I've shared them with
+    *I want to organize my friends by what notes I've shared with them
+  *Different encodings/formats/ of the same data lend themselves better to different use cases
+    *e.g. SI units vs American units
+    *e.g. polar coordinates vs cartesian coordinates
+    *e.g. speaking vs writing
+    *e.g. printing vs writing
+    *e.g. electronic text vs analog text
+    *e.g. outlines vs essays
+    *e.g. a diagam, chart, graph, table, scatterplot, flowchart vs wrapping text
+    *e.g. english with mathematical notation vs pure english
+    *e.g. javascript vs c vs haskell vs whatever
+*Consciousness, language, and notation are super interesting
+  *Formations of matter/motion/energy propagate into me and through my internal media. Some of the information is lost/destroyed/dissipated by collision/friction with the fixed structures of my cognition, while other informations passes through the right holes, enter the right cycles, and are perpetuated internally, somtimes finding their way into my cosnsciousness, my expressions, and perhaps into other people.
+    *e.g. channeling energy into people at a party via the right music selection
+    *e.g. I can only see some part of the EM spectrum, only a certain size of thing, only things in the right language for my receptors/mind
+  *The filtration/mapping/reducing of experience into language seems to be an extension of the same processing of reality into experience. The mysteries of experience/consciousness may be approached by beginning with these simplified expressions. 
+  *It would be cool if we all produced mental maps (say as part of the school curriculum), for internal reflection, and for study in aggregate.
+*Organizing the Internet is key to promoting education and democracy.
+  *It would be like humanity gaining a nervous system, as opposed to things just happening by diffusion/osmosis
+    *Right now things are organized enough that we can use money as model for willpower and information, but I think things are messy to the point that money holds too much weight in politics
+  *Social media has been around since the first gesture was given and received, and the first word spoken, written, printed, telegraphed, broadcasted, etc. Internet is less about the wires and computers, and more about the infrastructure of information/energy storage and transfer
 
 
-Let's build an interface/editor that emphasizes the organization of not just the information within each note, but the relationships between them and as a whole. This means dissolving the distinction between note-taking and messaging. This means enabling a note to be easily reframed into different contexts.
-
+### the Plan
 1. Write notes (e.g. thoughts, messages, pictures, posts, letters, etc)
   1. Committed notes are private by default
   2. Committed notes cannot be modified, but you can delete them if you like.
@@ -58,7 +95,7 @@ Let's build an interface/editor that emphasizes the organization of not just the
 6. Get social
   1. Share good content
   2. Make small payments and/or subscribe to content generators you like (e.g. the development team). Money is an awesome tool-- it's supposed to represent value. Lets help it be a more accurate model. 
-
+  3. Instead of messaging people at a single address, do a quick traversal of their public ontology to find the closest node to your message, and link it to that node. You can think of each node in the tree as a mailbox. 
 
 7. Get students to curate all their writing in a single place, a model of the evolution of their consciousness
   1 Students can publish some of their notes in the safe places such as to their class and school, where they can draw links to/from the notes of their teachers/peers.
@@ -73,11 +110,16 @@ Let's build an interface/editor that emphasizes the organization of not just the
 
 8. Apply this web-outline model to 3D virtual/augmented reality stuff.
 
-
 9. Promote education and democracy!
 
+10. Solve the sustainable energy problem.
 
-10. ???
+11. Make sure strong AI works out for us.
 
+12. Get humanity going on multiple planets.
 
-11. Prosper!
+13. ???
+
+14. Profit.
+
+15. Dissolve into everything.
