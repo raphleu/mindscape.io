@@ -1,6 +1,41 @@
 # mindscape.io
+pocket book / graph outliner
 
-the premier web outliner
+We provide an interface for building a mindscape graph, a layer of abstraction between user and neo4j graph.
+https://neo4j.com/docs/developer-manual/3.0/introduction/
+
+Open the interface, and you are logged in automatically as a new anonymous author (n1:Note:Author) in the graph.
+The interface outputs a visualization where n1 is the frame note. A big rectangle that contains all the action for now.
+
+Write a note (n2:Note) to yourself, maybe a couple sentences long, inside n1.
+n2 rests there on the plane of n1's body, like a business card does on a table.
+To move n2 around, either drag it and drop it, or select it and rightclick its destination.
+
+When you commit n2, you simultaneously commit 2 relationships (n1)-[w:WRITE]->(n2) and (n1)<-[r:READ]-(n2), between frame note and new note.
+By committing w, you state that n1 determined n2 in some way.
+w is represented on screen as an arrow from the topleft corner of n1 to the topleft corner of n2.
+The subgraph composed of Notes and WRITEs forms a directed graph that's rooted at the start with the Author Note, with WRITEs from generic to specific, and it could be interpreted like a Bayesian network.
+By committing r, you state that n2 is displayed inside of n1.
+r is represented on screen as the presence of n2 as a component inside the plane/internal space of n1.
+The subgraph composed of Notes and READs forms a directed tree that's rooted at the end with the frame Note, the leaf Notes are the most deeply nested notes.
+All notes have an ordering of its relationships.
+
+When you commit n2, the service simultaneously commits another 2 relationships
+(n_time:Note)-[w_time:WRITE]->(n2) and (n_space:Note)-[w_space:WRITE]->(n2).
+By committing w_time, the service states that n_time determines n2.
+By committing w_space, the service states that n_space determines n2.
+n_time and n_space represent the time and space where n1 commits n2. For instance, n_time = 3rd and n_space = Los_Angeles and (3rd:Note)<-[:WRITE]-(March:Note)<-[:WRITE]-(2017:Note)<-[:WRITE]-(time:Note)<-[:WRITE]-(n0:Note:Author:Service)-[:WRITE]->(space:Note)-[:WRITE]->(USA:Note)-[:WRITE]->(CA:Note)-[:WRITE]->(Los_Angeles:Note).
+
+Any graph element is associated with a single (:Note:Author) by the author_id property.
+n1.id = n2.author_id = w.author_id; 
+n0.id = n_time.author_id = w_time.author_id = n_space.author_id = w_time.author_id;
+
+
+
+....
+
+
+
 
 an app for writing/reading notes, where you link your notes together with arrows to form a web, so you can collapse the neighborhood of a note into an outline under that note. So you can have different outlinings of the same stuff. 
 
