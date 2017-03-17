@@ -1,47 +1,85 @@
 # mindscape.io
+pocket book / graph outliner
 
-the premier web outliner
+We provide an interface for building a mindscape graph, a layer of abstraction between user and neo4j graph.
+https://neo4j.com/docs/developer-manual/3.0/introduction/
 
-an app for writing/reading notes, where you link up your notes arrows to form webs, so you can collapse the neighborhood of a note into an outline under that note. So you can have different outlinings of the same stuff. 
+Open the interface, and you are logged in automatically as a new anonymous author (n1:Note:Author) in the graph.
+The interface outputs a visualization where n1 is the frame note. A big rectangle that contains all the action for now.
+
+Write a note (n2:Note) to yourself, maybe a couple sentences long, inside n1.
+n2 rests there on the plane of n1's body, like a business card does on a table.
+To move n2 around, either drag it and drop it, or select it and rightclick its destination.
+
+When you commit n2, you simultaneously commit 2 relationships (n1)-[w:WRITE]->(n2) and (n1)<-[r:READ]-(n2), between frame note and new note.
+By committing w, you state that n1 determined n2 in some way.
+w is represented on screen as an arrow from the topleft corner of n1 to the topleft corner of n2.
+The subgraph composed of Notes and WRITEs forms a directed graph that's rooted at the start with the Author Note, with WRITEs from generic to specific, and it could be interpreted like a Bayesian network.
+By committing r, you state that n2 is displayed inside of n1.
+r is represented on screen as the presence of n2 as a component inside the plane/internal space of n1.
+The subgraph composed of Notes and READs forms a directed tree that's rooted at the end with the frame Note, the leaf Notes are the most deeply nested notes.
+All notes have an ordering of its relationships.
+
+When you commit n2, the service simultaneously commits another 2 relationships
+(n_time:Note)-[w_time:WRITE]->(n2) and (n_space:Note)-[w_space:WRITE]->(n2).
+By committing w_time, the service states that n_time determines n2.
+By committing w_space, the service states that n_space determines n2.
+n_time and n_space represent the time and space where n1 commits n2. For instance, n_time = 3rd and n_space = Los_Angeles and (3rd:Note)<-[:WRITE]-(March:Note)<-[:WRITE]-(2017:Note)<-[:WRITE]-(time:Note)<-[:WRITE]-(n0:Note:Author:Service)-[:WRITE]->(space:Note)-[:WRITE]->(USA:Note)-[:WRITE]->(CA:Note)-[:WRITE]->(Los_Angeles:Note).
+
+Any graph element is associated with a single (:Note:Author) by the author_id property.
+n1.id = n2.author_id = w.author_id; 
+n0.id = n_time.author_id = w_time.author_id = n_space.author_id = w_time.author_id;
+
+
+
+....
+
+
+
+
+an app for writing/reading notes, where you link your notes together with arrows to form a web, so you can collapse the neighborhood of a note into an outline under that note. So you can have different outlinings of the same stuff. 
 
 check out the live beta @ www.mindscape.io
 
 ### the Motivation
-*It's hard to organize my notes so that I can keep track of everything as an integrated, curated whole.
-  *I rarely come back to old notes bc they're essentially all in a couple big piles, so it's not worth the effort to look through.
-  *I have separate piles for email, text messaging, fb messaging, fb posts, my academic writing, etc
-    *Within each pile, I have a little bit of organization, maybe notebooks or folders--but I can only view one folder at a time-- it's hard to tune what's in the display.
-*I want to organize my notes according to multiple schemas and switch quickly between them.
-  *I want to organize my notes in a hierarchy from most generic to most specific
-    *I want the hierarchy to be such that a note can fall under multiple super-notes at a time
-    *I want everyone's notes to be organized in a similar hierarchy, so we can compare corresponding areas
-  *I want to organize my notes according to the time of writing, like in a stream or journal.
-    *I want be able to set notes into future/past parts of the stream, like in a calendar.
-    *I want to look at the transformation of my notes over time, while they are displayed in a consistent manner.
-  *I want to organize everyone's notes according to the location they were taken
-    *I want everyone to be able to post notes this way, so I can get the local news and reach out to people nearby or in a specific place, like craigslist or tinder
-  *I want to organize my notes by who I've shared them with
-    *I want to organize my friends by what notes I've shared with them
-  *Different encodings/formats/ of the same data lend themselves better to different use cases
-    *e.g. SI units vs American units
-    *e.g. polar coordinates vs cartesian coordinates
-    *e.g. speaking vs writing
-    *e.g. printing vs writing
-    *e.g. electronic text vs analog text
-    *e.g. outlines vs essays
-    *e.g. a diagam, chart, graph, table, scatterplot, flowchart vs wrapping text
-    *e.g. english with mathematical notation vs pure english
-    *e.g. javascript vs c vs haskell vs whatever
-*Consciousness, language, and notation are super interesting
-  *Formations of matter/motion/energy propagate into me and through my internal media. Some of the information is lost/destroyed/dissipated by collision/friction with the fixed structures of my cognition, while other informations passes through the right holes, enter the right cycles, and are perpetuated internally, somtimes finding their way into my cosnsciousness, my expressions, and perhaps into other people.
-    *e.g. channeling energy into people at a party via the right music selection
-    *e.g. I can only see some part of the EM spectrum, only a certain size of thing, only things in the right language for my receptors/mind
-  *The filtration/mapping/reducing of experience into language seems to be an extension of the same processing of reality into experience. The mysteries of experience/consciousness may be approached by beginning with these simplified expressions. 
-  *It would be cool if we all produced mental maps (say as part of the school curriculum), for internal reflection, and for study in aggregate.
-*Organizing the Internet is key to promoting education and democracy.
-  *It would be like humanity gaining a nervous system, as opposed to things just happening by diffusion/osmosis
-    *Right now things are organized enough that we can use money as model for willpower and information, but I think things are messy to the point that money holds too much weight in politics
-  *Social media has been around since the first gesture was given and received, and the first word spoken, written, printed, telegraphed, broadcasted, etc. Internet is less about the wires and computers, and more about the infrastructure of information/energy storage and transfer
+1. It's hard to organize my notes so that I can keep track of everything as an integrated, curated whole.
+  1. I rarely come back to old notes bc they're essentially all in a couple big piles, so it's not worth the effort to look through.
+  1. I have separate piles for email, text messaging, fb messaging, fb posts, my academic writing, etc
+    1. Within each pile, I have a little bit of organization, maybe notebooks or folders--but I can only view one folder at a time-- it's hard to tune what's in the display.
+    
+2. I want to organize my notes according to multiple schemas and switch quickly between them.
+  1. I want to organize my notes in a hierarchy from most generic to most specific
+    1. I want the hierarchy to be such that a note can fall under multiple super-notes at a time
+    2. I want everyone's notes to be organized in a similar hierarchy, so we can compare corresponding areas
+  1. I want to organize my notes according to the time of writing, like in a stream or journal.
+    1. I want be able to set notes into future/past parts of the stream, like in a calendar.
+    2. I want to look at the transformation of my notes over time, while they are displayed in a consistent manner.
+  2. I want to organize everyone's notes according to the location they were taken
+    1. I want everyone to be able to post notes this way, so I can get the local news and reach out to people nearby or in a specific place, like craigslist or tinder
+  3. I want to organize my notes by who I've shared them with
+    1. I want to organize my friends by what notes I've shared with them
+  4. Different encodings/formats/ of the same data lend themselves better to different use cases
+    1. e.g. SI units vs American units
+    2. e.g. polar coordinates vs cartesian coordinates
+    3. e.g. speaking vs writing
+    4. e.g. printing vs writing
+    5. e.g. electronic text vs analog text
+    6. e.g. outlines vs essays
+    7. e.g. a diagam, chart, graph, table, scatterplot, flowchart vs wrapping text
+    8. e.g. english with mathematical notation vs pure english
+    9. e.g. javascript vs c vs haskell vs whatever
+    
+3. Consciousness, language, and notation are super interesting
+  1. Formations of matter/motion/energy propagate into me and through my internal media. Some of the information is lost/destroyed/dissipated by collision/friction with the fixed structures of my cognition, while other informations passes through the right holes, enter the right cycles, and are perpetuated internally, somtimes finding their way into my cosnsciousness, my expressions, and perhaps into other people.
+    1. e.g. channeling energy into people at a party via the right music selection
+    2. e.g. I can only see some part of the EM spectrum, only a certain size of thing, only things in the right language for my receptors/mind
+  2. The filtration/mapping/reducing of experience into language seems to be an extension of the same processing of reality into experience. The mysteries of experience/consciousness may be approached by beginning with these simplified expressions. 
+  3. It would be cool if we all produced mental maps (say as part of the school curriculum), for internal reflection, and for study in aggregate.
+  
+4. Organizing the Internet is key to promoting education and democracy.
+  1. It would be like humanity gaining a nervous system, as opposed to things just happening by diffusion/osmosis
+    1. Right now things are organized enough that we can use money as model for willpower and information, but I think things are messy to the point that money holds too much weight in politics
+  2. Social media has been around since the first gesture was given and received, and the first word spoken, written, printed, telegraphed, broadcasted, etc. Internet is less about the wires and computers, and more about the infrastructure of information/energy storage and transfer
 
 
 ### the Plan
@@ -116,10 +154,12 @@ check out the live beta @ www.mindscape.io
 
 11. Make sure strong AI works out for us.
 
-12. Get humanity going on multiple planets.
+13. Master genetic manipulations.
 
-13. ???
+14. Get humanity going on multiple planets.
 
-14. Profit.
+15. ???
 
-15. Dissolve into everything.
+16. Profit.
+
+17. Dissolve.
