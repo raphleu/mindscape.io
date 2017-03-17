@@ -11,15 +11,18 @@
     "babel-preset-stage-2": "^6.13.0",
     "bcryptjs": "^2.4.0",
     "body-parser": "^1.4.3",
-    "cookie-parser": "^1.4.3",
+    "connect-redis": "^3.2.0",
     "css-loader": "^0.23.1",
     "draft-js": "^0.9.1",
     "es6-promise": "^4.0.5",
     "express": "^4.4.5",
+    "express-session": "^1.15.1",
     "isomorphic-fetch": "^2.2.1",
     "jsonwebtoken": "^7.1.9",
     "lodash": "^4.17.0",
     "morgan": "^1.7.0",
+    "neo4j-driver": "^1.1.1",
+    "node-geocoder": "^3.16.0",
     "postcss-loader": "^0.9.1",
     "react": "^15.3.2",
     "react-dnd": "^2.1.4",
@@ -28,6 +31,7 @@
     "react-redux": "^4.4.5",
     "react-router": "^2.8.1",
     "react-router-redux": "^4.0.7",
+    "redis": "^2.7.0",
     "redux": "^3.6.0",
     "redux-logger": "^2.7.4",
     "redux-thunk": "^2.1.0",
@@ -36,6 +40,7 @@
     "socket.io": "^1.4.8",
     "source-map-loader": "^0.1.5",
     "style-loader": "^0.13.1",
+    "uuid": "^3.0.1",
     "webpack": "^2.2.1"
   },
   "devDependencies": {
@@ -48,7 +53,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "compile": "webpack",
-    "start": "webpack && node server.js",
+    "start": "webpack && node index.js",
     "dev": "webpack-dev-server"
   },
   "repository": {
@@ -61,8 +66,8 @@
   ],
   "author": "Peter Wei",
   "bugs": {
-    "url": "https://github.com/sweetPete/mindscape.io/issues"
+    "url": "https://github.com/geometerJones/mindscape.io/issues"
   },
-  "homepage": "https://github.com/sweetPete/mindscape.io",
+  "homepage": "https://github.com/geometerJones/mindscape.io",
   "license": "ISC"
 }

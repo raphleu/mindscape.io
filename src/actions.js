@@ -1,332 +1,337 @@
-import fetch from 'isomorphic-fetch';
+import { Node, Relationship, Display, Position,} from './types';
 
-import { Defaults, Displays, Relationships } from './types';
-import { getHeaders, setToken, setLocalStorageState, assignById } from './util';
+import { setLocalStorageState, getLocalStorageState } from './util';
 
-export const SET_LOCAL_STATE = 'SET_LOCAL_STATE';
+import uuid from 'uuid/v4';
 
-export const FETCH_STATE_REQUEST = 'FETCH_STATE_REQUEST';
-export const FETCH_STATE_SUCCESS = 'FETCH_STATE_SUCCESS';
-export const FETCH_STATE_FAILURE = 'FETCH_STATE_FAILURE';
+import { now } from 'lodash';
 
-const initialize_url = '/api/state/initialize';
-const update_url = 'api/state/update';
-const commit_url = 'api/state/commit';
-const delete_url = 'api/state/delete';
+export const START_FETCH = 'START_FETCH';
+export const ACCEPT_FETCH = 'ACCEPT_FETCH';
+export const REJECT_FETCH= 'REJECT_FETCH';
 
-export function initialize() {
-  let comment = 'initialize state'
+export function init() {
   return dispatch => {
-    fetchState(dispatch, initialize_url, {}, comment)
-      .then(state => {
-        dispatch(setLocalState(state, comment));
+    new Promise((resolve, reject) => {
+      const user_id = localStorage.getItem('user_id');
+      const note_by_id = localStorage.getItem('note_by_id');
+      const link_by_id = localStorage.getItem('link_by_id');
 
-        // save some state to local storage (user_ids, token_by_id)
-        setLocalStorageState(state);
-      })
-      .catch(error => {
-        console.error(error, comment);
+      dispatch({
+        type: 'INIT',
+        payload: {
+          user_id,
+          note_by_id,
+          link_by_id,
+        },
       });
-  };
-}
 
-export function stageNote(author, super_note, super_read) {
-  let comment = 'stage note';
-  return dispatch => {
-        // allocate temp_ids
-    let timestamp = Date.now();
-    const link_id = 'temp-' + timestamp;
-
-    timestamp++;
-    const note_id = 'temp-' + timestamp;
-
-    timestamp++;
-    const read_id = 'temp-' + timestamp;
-
-    const update = {
-      node_by_id: {
-        [author.id]: Object.assign({}, author, {
-          current_read_id: read_id,
-        }),
-        [note_id]: Object.assign({}, Defaults.Note, {
-          id: note_id,
-          read_ids: [read_id],
-          link_ids: [link_id],
-        }),
-      },
-      relationship_by_id: {
-        [link_id]: Object.assign({}, Defaults.LINK, {
-          id: link_id,
-          start: super_note.id,
-          end: note_id,
-          //properties: Object.assign({}, Defaults.LINK.properties, {}),
-        }),
-        [read_id]: Object.assign({}, Defaults.READ, {
-          id: read_id,
-          start: note_id,
-          end: author.id,
-          properties: Object.assign({}, Defaults.READ.properties, {
-            super_read_id: super_read.id,
-          }),
-        }),
-        [super_read.id]: Object.assign({}, super_read, {
-          properties: Object.assign({}, super_read.properties, {
-            sub_read_ids: [read_id, ...(super_read.properties.sub_read_ids || [])],
-          }),
-        }),
-      },
-    };
-
-    dispatch(setLocalState(update, comment));
-  };
-}
-
-export function cancelNote(author, note, read, super_read) {
-  let comment = 'cancel note'
-  return dispatch => {
-    const update = {
-      node_by_id: {
-        [author.id]: Object.assign({}, author, {
-          current_read_id: super_read.id,
-        }),
-        [note.id]: null,
-      },
-      relationship_by_id: {
-        [read.id]: null,
-        [super_read.id]: Object.assign({}, super_read, {
-          properties: Object.assign({}, super_read.properties, {
-            sub_read_ids: super_read.properties.sub_read_ids.filter(sub_read_id => (sub_read_id !== read.id)),
-          }),
-        }),
-      },
-    };
-
-    dispatch(setLocalState(update, comment));
-  };
-}
-
-export function setNote(author, note, read) {
-  let comment = 'set note';
-  return dispatch => {
-    const update = {
-      node_by_id: {
-        [note.id]: note
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+          resolve({
+            t: position.timestamp,
+            x: position.coords.longitude,
+            y: position.coords.latitude,
+            z: position.coords.altitude,
+          });
+        });
       }
-    };
-    dispatch(setLocalState(update, comment));
-
-    // TODO strip out position_editorState on the client-side?
-
-    if (note.write_id) { // if note is committed
-      fetchState(dispatch, update_url, {author, update}, comment); 
-    }
-  };
-}
-
-export function commitNote(author, note, read) {
-  let comment = 'commit note';
-  return dispatch => {
-    const update = {
-      node_by_id: {
-        [note.id]: Object.assign({}, note, {
-          committing: true,
-        }),
-      },
-    };
-    setLocalState(update, comment);
-
-    const units = [{
-      note,
-      read,
-    }];
-
-    fetchState(dispatch, commit_url, {author, units}, 'commit note')
-      .then(state => {
-        const update2 = {
-          node_by_id: Object.assign({[note.id]: null}, state.node_by_id),
-          relationship_by_id: Object.assign({[read.id]: null}, state.relationship_by_id),
-        };
-
-        dispatch(setLocalState(update2, comment))
-      });
-  };
-}
-
-export function deleteNote(author, note, read) {
-  let comment = 'delete note';
-  return dispatch => {
-    const update = {
-      node_by_id: {
-        [note.id]: Object.assign({}, note, {
-          deleting: true,
-        }),
-      },
-    };
-    setLocalState(update, comment);
-
-    const units = [{
-      note,
-      read,
-    }];
-
-    fetchState(dispatch, delete_url, {author, units}, comment)
-      .then(state => {
-        const update2 = {
-          node_by_id: {
-            [note.id]: null,
+      else {
+        resolve({
+          t: now(),
+          x: null,
+          y: null,
+          z: null,
+        });
+      }
+    }).then(({t, x, y, z}) => {
+      dispatch({
+        type: START_FETCH,
+        payload: {
+          params: {
+            user_id,
+            t,
+            x,
+            y,
+            z,
           },
-          relationship_by_id: Object.assign({[read.id]: null}, state.relationship_by_id),
-        }
-        setLocalState(update2, comment);
+        },
       });
-  }
+
+      fetch(`/api/inventory?user_id=${user_id}&t=${t}&x=${x}&y=${y}&z=${z}`, {
+        method: 'GET',
+        headers: new Headers(),
+      }).then(response => {
+        console.log('response blob', response.blob());
+        if (response.ok) {
+          dispatch({
+            type: ACCEPT_FETCH,
+            payload: response.json(),
+          });
+        }
+        else {
+          dispatch({
+            type: REJECT_FETCH,
+            payload: response.json(),
+          });
+        }
+      });
+    }).catch(error => {
+      console.error(error);
+    });
+  };
+}
+
+export function stageNote({author, parent_note, present_index, current_read}) {
+  return dispatch => {
+    // allocate temp_ids
+    const timestamp = now();
+    const note_id = uuid();
+    const write_id = uuid();
+    const define_id = uuid();
+    const read_id = uuid();
+    const present_id = uuid();
+
+    const update = {
+      node_by_id: {
+        [note_id]: {
+          labels: [Node.Note],
+          properties: {
+            id: note_id,
+            author_id: author.properties.id,
+            text: '',
+            meta_text: '',
+            created_time: timestamp,
+          },
+        },
+      },
+      relationship_by_id: {
+        [read_id]: {
+          type: Relationship.READ,
+          properties: {
+            id: read_id,
+            start_id: note_id,
+            end_id: author.properties.id,
+            author_id: author.properties.id,
+            display: Display.SEQUENCE,
+            current: true,
+            created_time: timestamp,
+          },
+        },
+        [present_id]: {
+          type: Relationship.PRESENT,
+          properties: {
+            id: present_id,
+            start_id: parent_note.properties.id,
+            end_id: note_id,
+            index: 0,
+            position: Position.STATIC,
+            x: 0,
+            y: 0,
+            created_time: timestamp,
+          },
+        },
+        [current_read.properties.id]: Object.assign({}, current_read, {
+          properties: Object.assign({}, current_read.properties, {current: false}),
+        }),
+      },
+    };
+
+
+  };
+}
+
+export function cancelNote({author, note, read, present, parent_read}) {
+  return {
+    type: CANCEL_NOTE,
+    payload: {
+      node_by_id: 
+        [note.properties.id]: null,
+      },
+      relationship_by_id: {
+        [read.properties.id]: null,
+        [present.properties.id]: null,
+        [parent_read.id]: Object.assign({}, parent_read, {
+          properties: Object.assign({}, parent_read.properties, {
+            current: false,
+          }),
+        }),
+      },
+    },
+  };
+}
+
+export function addLink(author, start_note, start_path, end_note, end_path) {
+  return dispatch => {
+    Promise((accept, reject) => {
+    const link_id = now();
+    const modification = {
+      relationship_by_id: {
+        [link_id]: {
+          id: link_id,
+          start: start_note.id,
+          end: end_note.id,
+          type: 'LINK',
+        },
+      },
+    };
+
+    dispatch({
+      type: ADD_LINK,
+      payload: state
+    });
+
+    if (start_note.commit && end_note.commit) {
+      dispatch({
+        type: START_FETCH,
+        payload: state,
+      });
+
+      fetch(set_url, {
+        method: 'post',
+        headers: new Headers({
+          'Content-Type': 'application/json',
+          'author': JSON.stringify(author),
+        }),
+        body: JSON.stringify({graph: state}),
+      }).then(response => {
+        if (response.ok) {
+          dispatch({
+            type: ACCEPT_FETCH,
+            payload: response.blob(),
+          });
+
+          dispatch({
+            type: REMOVE_LINK,
+            payload: link_id
+          });
+
+          const modification2 = Object.assign({}, modification, response.blob());
+          accept(response.blob());
+        }
+        else {
+          dispatch({
+            type: REJECT_FETCH,
+            payload: response.blob(),
+          });
+
+          reject(response.blob());
+        }
+      });
+    }
+    else {
+      accept(modification);
+    }
+
+  });
 }
 
 export function moveNote(author, note, read, super_read, prev_super_read) {
-  let comment = 'move note';
   return dispatch => {
-    const update = {
+    const state = {
       node_by_id: {
         [author.id]: Object.assign({}, author, {
           current_read_id: read.id,
         }),
       },
-      relationship_by_id: [read, super_read, prev_super_read].reduce(assignById, {}),
+      relationship_by_id: [read, super_read, prev_super_read].reduce(
+        (relationship_by_id, relationship) => Object.assign({}, relationship_by_id, {
+          [relationship.id]: relationship
+        }), {}),
     };
 
-    dispatch(setLocalState(update, comment));
-
-    if (note.write_id) { // if note is committed
-      fetchState(dispatch, update_url, {author, update}, comment);
-    }
-  };
-}
-
-export function currentNote(author, note, read) {
-  let comment = 'current note';
-  return dispatch => {
-    if (read.id === author.current_read_id) {
-      return;
-    }
-
-    const update = {
-      node_by_id: {
-        [author.id]: Object.assign({}, author, {
-          current_read_id: read.id,
-        }),
-      },
-    };
-
-    dispatch(setLocalState(update, comment));
-
-    if (note.write_id) {
-      fetchState(dispatch, update_url, {author, update}, comment);
-    }
-  };
-}
-
-export function frameNote(author, note, read) {
-  let comment = 'frame note';
-  return dispatch => {
-    if (note.write_id == null) {
-      return;
-    }
-    if (read.id === author.root_read_id) {
-      return;
-    }
-
-    const is_frame = (read.id === author.frame_read_id);
-
-    const update = {
-      node_by_id: {
-        [author.id]: Object.assign({}, author, {
-          frame_read_id: is_frame ? author.root_read_id : read.id,
-        }),
-      },
-      relationship_by_id: {
-        [read.id]: Object.assign({}, read, {
-          properties: Object.assign({}, read.properties, {
-            display: is_frame ? Displays.SEQUENCE : Displays.PLANE,
-          }),
-        }),
-      },
-    };
-
-    dispatch(setLocalState(update, comment));
-    
-    fetchState(dispatch, update_url, {author, update}, comment);
-  }
-}
-
-function setLocalState(state, comment) {
-  return {
-    type: SET_LOCAL_STATE,
-    payload: {
-      state,
-    },
-    comment,
-  };
-}
-
-function fetchState(dispatch, url, params, comment) {
-  dispatch(fetchStateRequest(url, params, comment));
-
-  return fetch(url, {
-    method: 'post',
-    headers: getHeaders(),
-    body: JSON.stringify(params),
-  }).then(response => {
-      return response.json()
-        .then(json => {
-          if (response.ok) { 
-            dispatch(fetchStateSuccess(url, params, json.data, comment));
-            return json.data;
-          }
-          else {
-            throw Error(json.data);
-          }
-        });
-    })
-    .catch(error => {
-      dispatch(fetchStateFailure(url, params, error, comment));
-
-      return null;
+    dispatch({
+      type: MOVE_NOTE,
+      payload: state,
     });
 
-  function fetchStateRequest(url, params, comment) {
-    return  {
-      type: FETCH_STATE_REQUEST,
-      payload: {
-        url,
-        params,
-      },
-      comment
-    };
-  }
+    if (note.commit && read.commit) {
+      dispatch({
+        type: 'START_FETCH',
+        payload: state,
+      });
 
-  function fetchStateSuccess(url, params, state, comment) {
-    return {
-      type: FETCH_STATE_SUCCESS,
-      payload: {
-        url,
-        params,
-        state,
-      },
-      comment,
-    };
-  }
+    }
+  };
+}
 
-  function fetchStateFailure(url, params, error, comment) {
-    console.error(error);
-    return {
-      type: FETCH_STATE_FAILURE,
-      payload: {  
-        url,
-        params,
-        error,
+export function setCurrent({user, current_path, path}) {
+  return dispatch => {
+    const link_by_id = {};
+
+    let current = path.length;
+    let i = 0;
+    // follow intersection from root
+    while (current_path[i] && path[i] && current_path[i].properties.id === path[i].properties.id) {
+      if (path[i].properties.current != current) {
+        const link = path[i];
+        link_by_id[link.properties.id] = Object.assign({}, link, {
+          properties: Object.assign({}, link.properties, {
+            current--,
+          }),
+        });
+      }
+      i++;
+    }
+    // de-current current_path branch
+    for (let j = i; j < current_path.length; j++) {
+      const link = current_path[j];
+      link_by_id[link.properties.id] = Object.assign({}, link, {
+        properties: Object.assign({}, link.properties, {
+          current: 0,
+        }),
+      });
+    }
+    // current path branch
+    for (let k = i; k < path.length; k++) {
+      const link = path[k];
+      link_by_id[link.properties.id] = Object.assign({}, link, {
+        properties: Object.assign({}, link.properties, {
+          current--,
+        }),
+      });
+    }
+
+    dispatch({
+      type: 'SET_CURRENT',
+      payload: {
+        link_by_id,
       },
-      comment,
+    });
+
+    const params = {
+      user_id: user.properties.id,
+      note_by_id: {},
+      link_by_id,
     };
-  }
+
+    dispatch({
+      type: START_FETCH,
+      payload: {
+        params,
+      },
+    });
+
+    fetch(`/api/feature`, {
+      method: 'PUT',
+      headers: new Headers(),
+      body: JSON.stringify(params),
+    }).then(response => {
+      if (response.ok) {
+        dispatch({
+          type: ACCEPT_FETCH,
+          payload: response.json(),
+        });
+      }
+      else {
+        dispatch({
+          type: REJECT_FETCH,
+          payload: response.json(),
+        });
+      }
+    }).catch(error => {
+      console.error(error);
+    });
+  };
 }
 

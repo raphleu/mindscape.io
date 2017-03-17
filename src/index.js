@@ -51,7 +51,7 @@ const store = createStore(
 
 const history = syncHistoryWithStore(browserHistory, store);
 
-const render = (Component) => {
+function render(Component) {
   ReactDOM.render(
     <Component store={store} history={history} />,
     document.getElementById('root')

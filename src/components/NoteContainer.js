@@ -1,283 +1,199 @@
 import React, { PropTypes } from 'react';
-import { connect } from 'react-redux'; 
+import { connect } from 'react-redux';
 
-import { Positions, Displays } from '../types';
+import { NodeLabels, NotePositions, NoteDisplays, NoteBodies } from '../types';
 
-import { cancelNote, setNote, commitNote, currentNote } from '../actions';
+import { setCurrent } from '../actions';
 
-import { Editor, EditorState, ContentState } from 'draft-js';
+import { flow } from 'lodash';
+//import * as force from 'd3-force';
 
-class Note extends React.Component {
+import { findDOMNode } from 'react-dom'
+
+import { DragSource } from 'react-dnd';
+
+import { NoteDropTargetContainer } from './NoteDropTargetContainer';
+import { NoteContainer } from './NoteContainer';
+import { SubNotesContainer } from './SubNotesContainer';
+
+class Note extends React.Component { //Note
   constructor(props) {
     super(props);
 
-    const { note } = this.props;
-
-    if (note.write_id == null) {
-      this.state = {
-        editorState: note.editorState
-          ? note.editorState
-          : EditorState.createEmpty(),
-      };
-    }
-    else {
-      this.state = {};
-    }
-
-    this.setEditorRef = this.setEditorRef.bind(this);
-
-    this.getEditedNote = this.getEditedNote.bind(this);
-
     this.handleClick = this.handleClick.bind(this);
-    this.handleCancel = this.handleCancel.bind(this);
-    this.handleChange = this.handleChange.bind(this);
-    this.handleCommit = this.handleCommit.bind(this);
-  }
-
-  componentDidMount() {
-    const { user, note, path } = this.props;
-
-    if (note.write_id == null && user.current_read_id === path[0].id) {
-      this.editor.focus();
-    }
-  }
-
-  setEditorRef(ref) {
-    this.editor = ref;
-  }
-
-  getEditedNote() {
-    const { note } = this.props;
-    const { editorState } = this.state;
-
-    const contentState = editorState.getCurrentContent();
-    const text = contentState.getPlainText();
-
-    console.log('text', '@'+text+'@');
-
-    return Object.assign({}, note, {
-      text,
-      editorState,
-    });
+    this.handleDoubleClick = this.handleDoubleClick.bind(this);
   }
 
   handleClick(event) {
+    event.stopPropagation();
+    console.log('click');
+
+    const { user, current_path, path, dispatch } = this.props;
+
+    dispatch(setCurrent({user, current_path, path}));
+  }
+
+  handleDoubleClick(event) {
+    event.stopPropagation();
+    console.log('doubleClick');
+
     const { user, note, path, dispatch } = this.props;
 
-    if (note.write_id == null) {
-      event.stopPropagation(); // prevent read-drag, so we can hilight text!
-
-      dispatch(currentNote(user, note, path[0]));
-    }
-  }
-
-  handleCancel(event) {
-    const { user, note, path, dispatch } = this.props;
-    const { timer_id } = this.state;
-
-    clearTimeout(timer_id);
-
-    dispatch(cancelNote(user, note, path[0], path[1]));
-  }
-
-  handleChange(editorState) {
-    const { user, path, dispatch } = this.props;
-    const { timer_id } = this.state;
-
-    clearTimeout(timer_id);
-
-    this.setState({
-      editorState: editorState,
-      timer_id: setTimeout(() => {
-        const note = this.getEditedNote();
-
-        dispatch(setNote(user, note, path[0]));
-      }, 1000),
-    });
-  }
-
-  handleCommit(event) {
-    const { user, path, dispatch } = this.props;
-    const { position_editorState, timer_id } = this.state;
-
-    clearTimeout(timer_id);
-
-    const note = this.getEditedNote();
-    
-    dispatch(commitNote(user, note, path[0]))
+    //dispatch(frameNote(user, note, path[0])); // TODO maximize a note
   }
 
   render() {
-    //console.log('render Note', this.props)
-    const { user, note, path, connectDragSource } = this.props;
-    const { editorState } = this.state;
+    //console.log('render Note', this.props);
+    const {
+      user,
+      path,
+      //
+      note,
+      sub_reads,
+      //
+      is_dragging,
+      connectDragSource,
+      connectDragPreview,
+    } = this.props;
 
-    // TODO on read.properties.mode == minimized, display text up to first double newline
-    const style = {
-      text_content: {
-        minWidth: 200,
-      },
-      button: {
-        display: 'inline-block',
-        margin: 2,
-        border: '1px solid darkgrey',
-        borderTopRightRadius: 2,
-        borderBottomLeftRadius: 2,
-        cursor: 'pointer',
-        color: 'darkgrey',
-      },
-      button_content: {
-        border: '1px solid azure',
-        borderTopRightRadius: 2,
-        borderBottomLeftRadius: 2,
-        padding: 2,
-        backgroundColor: 'white',
-      },
-    };
-    style.commit_button = Object.assign({}, style.button, {
-      borderColor: 'darkorchid',
-      color: 'darkorchid'
-    });
+    const is_current = (path[path.length - 1].properties.current === 1);
 
-    const is_current = (user.current_read_id === path[0].id);
-    const is_frame = (user.frame_read_id === path[0].id);
-    const is_root = (user.root_read_id === path[0].id);
+    const position = (path[path.length - 2].properties.display === NoteDisplays.OUTLINE) // if parent note in list mode, override position
+      ? NotePositions.STATIC
+      : path[path.length - 1].properties.position;
 
-    const position = (path[1] == null || path[1].properties.display === Displays.SEQUENCE)
-      ? Positions.DOCK
-      : path[0].properties.position;
-
-    const index = (path[1] && ((path[1].properties.sub_read_ids || []).indexOf(path[0].id) + 1)) || 0;
-
-    const handles = (
-      <div style={{display: 'inline-block'}}>
-        {
-          is_frame ? null : (
-            <div className='point' style={{
-              zIndex: 5,
-              position: 'absolute',
-              left: -6,
-              top: -6,
-              width: 6,
-              height: 6,
-              backgroundColor: (position === Positions.DOCK) ? 'white' : 'lightyellow',
-              border: is_current
-                ? '1px solid darkturquoise'
-                : (is_root 
-                  ? '1px solid darkorchid'
-                  : (is_frame
-                    ? '1px solid steelblue'
-                    : ((position === Positions.DOCK) ? '1px solid lavender' : '1px solid gold'))),
-              borderRadius: 2,
-            }}/>
-          )
-        }
-        <div className='index' style={{
-          display: 'inline-block',
-          verticalAlign: 'middle',
-          color: is_current
-            ? 'darkturquoise'
-            : (is_root
-              ? 'darkorchid'
-              : (is_frame ? 'steelblue' : 'lavender')),
-          margin: 2,
-          marginLeft: 4,
-        }} >
-          { index }
-        </div>
-      </div>
-    );
-
-    let handles2;
-    if (is_frame) {
-      handles2 = handles;
-    }
-    else {
-      handles2 = (note.write_id == null) ? connectDragSource(handles) : handles;
-    }
-
-    const text_content = (note.write_id == null) ? (
-      <div className='text-content' style={style.text_content}>
-        <div className='editor' style={{
-          display:'inline-block',
-          verticalAlign: 'middle',
-          minWidth: 200,
-          cursor: 'text',
-        }}>
-          <Editor ref={this.setEditorRef} editorState={editorState} onChange={this.handleChange} />
-        </div>
-        <div className='editor-controls' style={{
-          display: 'inline-block',
-          verticalAlign: 'bottom'
-        }}>
-          <div className='commit' onClick={this.handleCommit} style={style.commit_button}>
-            <div style={style.button_content}>
-              commit
-            </div>
-          </div>
-          <div className='cancel' onClick={this.handleCancel} style={style.button}>
-            <div style={style.button_content}>
-              cancel
-            </div>
-          </div>
-        </div>
-      </div>
-    ) : (
-      <div className='text-content' style={style.text_content}>
-        { note.text }
-      </div>
-    );
-
-    const main = (
-      <div id={'note-'+note.id} className='note' style={{
-        border: '1px solid lavender',
+    const content = (
+      <div className='note-content' style={{
+        border: is_current ? '1px solid darkturquoise' : '1px solid lavender',
         borderTopRightRadius: 4,
         borderBottomLeftRadius: 4,
-        minWidth: 200,
-        cursor: '-webkit-grab',
+        width: 'auto',
       }}>
-        <div className='note-content' style={{
-          position: 'relative',
-          border: '2px solid azure',
-          borderTopRightRadius: 4,
-          borderBottomLeftRadius: 4,
-          backgroundColor: 'white',
-        }}>
-          { handles2 }
-          <div className='text' onClick={this.handleClick} style={{
-            display: 'inline-block',
-            margin: 2,
-            border: (note.write_id == null) ? '1px solid darkturquoise' : 'none',
-            borderTopRightRadius: 4,
-            borderBottomLeftRadius: 4,
-            padding: 2,
-            backgroundColor: 'white',
-            whiteSpace: 'nowrap',
-            cursor: (note.write_id == null) ? 'default' : '-webkit-grab',
-          }}>
-            { text_content }
-          </div>
-        </div>
+        <NoteHeadContainer user={user} note={note} path={path} connectDragSource={connectDragSource}/>
+        {
+          (path[path.length - 1].properties.display === NoteDisplays.BODY)
+            ? <NoteBodyContainer user={user} note={note} path={path} sub_reads={sub_reads} />
+            : null 
+        }
       </div>
     );
 
-    if (is_frame) {
-      return main;
-    }
-    else {
-      const main2 = (note.write_id == null) ? main : connectDragSource(main);
-
-      return main2;
-    }
+    return connectDragPreview(
+      <div id={'note-' + note.properties.id} className='note'
+        onClick={this.handleClick}
+        onDoubleClick={this.handleDoubleClick}
+        style={{
+          zIndex: is_current ? 100 : 'auto',
+          display: 'block',
+          float: 'left',
+          clear: 'both',
+          position: (position === NotePositions.STATIC) ? 'static' : 'absolute',
+          left: path[0].properties.x,
+          top: path[0].properties.y,
+          margin: 2,
+          opacity: is_dragging ? 0.5 : 1,
+        }}
+      >
+        {
+          path[path.length - 1].properties.frame ? content : (
+            <NoteDropTargetContainer path={path} depth={1} position={position}>
+              { content }
+            </NoteDropTargetContainer>
+          )
+        }
+      </div>
+    );
   }
 }
 
 Note.propTypes = {
-  user: PropTypes.object.isRequired,
-  note: PropTypes.object.isRequired,
+  user: PropTypes.object,
+  current_path: PropTypes.arrayOf(PropTypes.object).isRequired,
   path: PropTypes.arrayOf(PropTypes.object).isRequired,
+  // state
+  dispatch: PropTypes.func,
+  note: PropTypes.object,
+  sub_reads: PropTypes.arrayOf(PropTypes.object),
+  deleted_super_reads: PropTypes.arrayOf(PropTypes.object),
+  // drag n drop
+  is_dragging: PropTypes.bool,
   connectDragSource: PropTypes.func,
-  dispatch: PropTypes.func.isRequired,
-};
+  connectDragPreview: PropTypes.func,
+}
 
-export const NoteContainer = connect()(Note);
+export const NoteContainer = flow(
+  connect((state, ownProps) => {
+    const { note_by_id, link_by_id_by_start_id } = state;
+    const { user, path } = ownProps;
+
+    const note = note_by_id[path[0].properties.end_id];
+
+    const sub_link_by_id = link_by_id_by_start_id[note.properties.id];
+    const sub_reads = Object.keys(sub_link_by_id).reduce((sub_reads, id) => {
+      const sub_link = sub_link_by_id[id];
+      if (
+        sub_link.type === LinkTypes.READ &&
+        sub_link.properties.author_id === user.properties.id &&
+        sub_link.properties.deleted_t == null
+      ) {
+        return [...sub_reads, sub_link];
+      }
+      else {
+        return sub_reads;
+      }
+    }, []);
+
+    const super_link_by_id = link_by_id_by_end_id[note.properties.id];
+    const deleted_super_reads = Object.keys(super_link_by_id).reduce((deleted_super_reads, id) => {
+      const super_link = super_link_by_id[id];
+      if (
+        super_link.type === LinkTypes.READ &&
+        super_link.properties.author_id === user.properties.id &&
+        super_link.properties.deleted_t != null
+      ) {
+        return [...deleted_super_reads, super_link];
+      }
+      else {
+        return deleted_super_reads;
+      }
+    }, []);
+
+    return {
+      note,
+      sub_reads,
+      deleted_super_reads,
+    };
+  }),
+  DragSource(
+    NodeLabels.Note,
+    {
+      beginDrag: (props, monitor, component) => {
+        const { user, note, path } = props;
+        const clientRect = findDOMNode(component).getBoundingClientRect();
+
+        const item = {
+          user,
+          path,
+          note,
+          deleted_super_reads,
+          clientRect,
+        };  
+        console.log('beginDrag', item);
+
+        return item;
+      },
+      isDragging: (props, monitor) => {
+        const item = monitor.getItem();
+        return (props.note.properties.id === item.note.properties.id);
+      },
+    }, 
+    (connector, monitor) => {
+      const props = {
+        is_dragging: monitor.isDragging(),
+        connectDragSource: connector.dragSource(),
+        connectDragPreview: connector.dragPreview(),
+      };
+      return props;
+    }
+  ),
+)(Note);

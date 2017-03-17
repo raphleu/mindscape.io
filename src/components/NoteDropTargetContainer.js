@@ -1,69 +1,46 @@
 import React, { PropTypes } from 'react';
 import { connect } from 'react-redux';
 
-import { Displays, Positions, DragTypes } from '../types';
+import { NodeLabels, LinkTypes, NotePositions, NoteDisplays } from '../types';
 
 import { moveNote } from '../actions';
 
-import { flow } from 'lodash';
+import { flow, now } from 'lodash';
 
 import { DropTarget } from 'react-dnd';
 
 import { findDOMNode } from 'react-dom'
 
 
-class ReadDropTarget extends React.Component { // aka AddNote
-  constructor(props) {
-    super(props);
-  }
-  
-  render() {
-    const { style, is_over, connectDropTarget, children } = this.props;
-
-    return connectDropTarget(
-      <div className='read-drop'
-        style={{
-          border: is_over ? '2px solid darkturquoise' : 'none',
-        }}
-      >
-        {children}
-      </div>
-    );
-  } 
+function NoteDropTarget(props) {
+  const {is_over, connectDropTarget, children} = props;
+  return connectDropTarget(
+    <div className='note-drop-target' style={{
+      border: is_over ? '2px solid darkturquoise' : 'none',
+    }}>
+      {children}
+    </div>
+  );
 }
 
-ReadDropTarget.propTypes = {
-  // ownProps
+NoteDropTarget.propTypes = {
   path: PropTypes.arrayOf(PropTypes.object), // path has all super_reads; readout would have all sub_reads
   depth: PropTypes.number,
-  item_position: PropTypes.string,
-  // dispatch 
-  setState: PropTypes.func,
+  position: PropTypes.string,
+  // state 
+  dispatch: PropTypes.func,
   // drag n drop
   is_over: PropTypes.bool,
   connectDropTarget: PropTypes.func,
-}
-
-function getDropTargetProps(connector, monitor) { // dragNDropProps
-  return {
-    is_over: (monitor.isOver({shallow: true}) && monitor.canDrop()),
-    connectDropTarget: connector.dropTarget(),
-  };
-}
+};
 
 const dropTarget = {
   canDrop: (props, monitor) => {
     const { path, depth, item_position } = props;
-    if (path[depth] == null) {
-      // target not defined
-      console.log('no target', path, depth);
-      return false;
-    }
     const item = monitor.getItem();
     for (let i = 0; i < path.length; i++) {
-      if (path[i].id === item.path[0].id) {
-        // item equals target or is super of target
-        return false;
+      if (item.note.properties.id === path[i].properties.end_id) {
+        return false; // item contains/is target
       }
     }
     return true;
@@ -74,19 +51,66 @@ const dropTarget = {
     }
     console.log('drop', props)
 
-    const { user, path, depth, item_position, dispatch } = props; // target props
+    const { user, path, depth, position, dispatch } = props; // target props
     const target_clientRect = findDOMNode(component).getBoundingClientRect();
 
     const item = monitor.getItem();
+    const item_clientOffset = monitor.getSourceClientOffset();
 
-    const change_super_read = (item.path[1].id !== path[depth].id);
+    // mark prev read as deleted_t, deleted_x, etc
+    // mark next read as created_t, etc
+    // next read might be an old/deleted read
+    // get from drop target? or from item?
+    // let item hold deleted super_reads!
 
-    const read = Object.assign({}, item.path[0], {
-      properties: Object.assign({}, item.path[0].properties, {
-        super_read_id: path[depth].id,
-        position: item_position,
-      }),
-    });
+    const target_read = path[path.length - 1 - depth];
+    const item_read = item.path[item.path.length - 1];
+
+    if (target_read.properties.end_id === item_read.properties.start_id) {
+      // item is already sub_read of target
+      let read = item.path[item.path.length - 1];
+
+      read = 
+    }
+    else {
+      let prev_read = item.path[item.path.length - 1];
+      let next_read;
+
+      item.deleted_super_reads.some(deleted_super_read => {
+        if (path[path.length - 1 - depth].properties.end_id === deleted_super_read.properties.start_id) {
+          next_read = deleted_super_read;
+          return true;
+        }
+        return false;
+      });
+      if (next_read == null) {
+        next_read = {
+          type: LinkTypes.READ,
+        };
+      }
+
+      next_read = Object.assign({}, next_read, {
+        properties: Object.assign({}, next_read.properties, {
+          position,
+          x: (position === NotePositions.STATIC)
+            ? 0
+            : (depth === 0)
+              ? Math.max(item_clientOffset.x - target_clientRect.left, 0)
+              : (depth === 1),
+          y: (position === NotePositions.STATIC) ? 0 : Math.max(item_clientOffset.y - target_clientRect.top, 0)
+        }),
+      });
+    }
+
+    dispatch(moveNote({
+      prev_read,
+      next_read,
+      same_read,
+    }))
+
+    let next_read;
+
+
 
     let prev_super_read;
     let super_read;
@@ -168,7 +192,12 @@ function insertSubRead(read, insert_sub_read, target_sub_read, insert_before_tar
   return read2;
 }
 
-export const ReadDropTargetContainer = flow(
-  DropTarget(DragTypes.READ, dropTarget, getDropTargetProps),
+export const NoteDropTargetContainer = flow(
   connect(),
-)(ReadDropTarget);
+  DropTarget(NodeLabels.Note, dropTarget, (connector, monitor) => { 
+    return {
+      is_over: (monitor.isOver({shallow: true}) && monitor.canDrop()),
+      connectDropTarget: connector.dropTarget(),
+    };
+  }),
+)(NoteDropTarget);

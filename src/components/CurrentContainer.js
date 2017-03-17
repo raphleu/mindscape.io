@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 
 import { Displays, Positions } from '../types';
 
-import { deleteNote } from '../actions';
+import { cancelNote, deleteNote } from '../actions';
  
 class Current extends React.Component {
   constructor(props) {
@@ -32,6 +32,18 @@ class Current extends React.Component {
       });    
     };
   }
+
+  addLink(event) {
+    // set state to adding link mode
+    // click node to add as link
+    // link in from note to current
+    
+    const { user, note, path, dispatch } = this.props;
+
+
+    dispatch()
+  }
+
 
   render() {
     const { user, path, note, write, reads, links } = this.props;
@@ -175,22 +187,20 @@ class Current extends React.Component {
           </div>
           <div>
             <div style={style.buttons}>
-              <div style={style.factor_button} onClick={this.showLinks('factors')}>
-                <div style={style.button_content}>
-                  factors
-                </div>
-
-              </div>
-              <div style={style.product_button} onClick={this.showLinks('products')}>
-                <div style={style.button_content}>
-                  products
-                </div>
-              </div>
               <div style={style.all_button} onClick={this.showLinks('all')}>
                 <div style={style.button_content}>
                   all
                 </div>
               </div>
+              <div className='add-link' onClick={this.addLink()} style={style.button}>
+
+              </div>
+
+
+
+
+
+
             </div>
             {
               links.map(link => {
