@@ -1,17 +1,27 @@
 import {
-  START_FETCH,
-  ACCEPT_FETCH,
-  REJECT_FETCH,
+  INIT_FETCH,
+  LOGOUT_FETCH,
+  LOGIN_FETCH
+  MOVE_NOTE_FETCH,
+  SET_CURRENT_FETCH,
+  FETCH_ACCEPT,
+  FETCH_REJECT,
+  LOGIN_FETCH_ACCEPT,
 } from './actions';
 
 import { routerReducer as routing } from 'react-router-redux';
 
 function fetching(state = false, action) {
   switch (action.type) {
-    case START_FETCH:
+    case INIT_FETCH:
+    case LOGOUT_FETCH:
+    case LOGIN_FETCH:
+    case MOVE_NOTE_FETCH:
+    case SET_CURRENT_FETCH:
       return true;
-    case ACCEPT_FETCH:
-    case REJECT_FETCH:
+    case FETCH_ACCEPT:
+    case FETCH_REJECT:
+    case LOGIN_FETCH_ACCEPT:
       return false;
     default:
       return state;
@@ -20,6 +30,8 @@ function fetching(state = false, action) {
 
 function user_id(state = '', action) {
   switch (action.type) {
+    case LOGOUT_FETCH:
+      return '';
     default:
       return (action.payload.user_id != null) ? action.payload.user_id : state;
   }
@@ -27,12 +39,15 @@ function user_id(state = '', action) {
 
 function note_by_id(state = {}, action) {
   switch (action.type) {
+    case LOGOUT_FETCH:
+      return {};
     default:
+      const prev_state = (action.type === LOGIN_FETCH_ACCEPT) ? {} : state; 
       return Object.keys(action.payload.note_by_id || {}).reduce((note_by_id, id) => {
         return Object.assign({}, note_by_id, {
           [id]: action.payload.note_by_id[id],
         }),
-      }, state);
+      }, prev_state);
   }
 }
 
@@ -43,7 +58,10 @@ const empty_links = {
 };
 function links(state = empty_links, action) {
   switch (action.type) {
+    case LOGOUT_FETCH:
+      return empty_links;
     default:
+      const prev_state = (action.type === LOGIN_FETCH_ACCEPT) ? empty_links : state;
       return Object.keys(action.payload.link_by_id || {}).reduce((links, id) => {
         const link = action.payload.link_by_id[id];
         return {
@@ -61,7 +79,7 @@ function links(state = empty_links, action) {
             }),
           }),
         };
-      }, state);
+      }, prev_state);
   }
 }
 

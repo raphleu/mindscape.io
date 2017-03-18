@@ -54,6 +54,7 @@ const dropTarget = {
     const { user, path, depth, position, dispatch } = props; // target props
     const target_clientRect = findDOMNode(component).getBoundingClientRect();
 
+    const cursor_clientOffset = monitor.getClientOffset();
     const item = monitor.getItem();
     const item_clientOffset = monitor.getSourceClientOffset();
 
@@ -68,29 +69,46 @@ const dropTarget = {
 
     if (target_read.properties.end_id === item_read.properties.start_id) {
       // item is already sub_read of target
-      let read = item.path[item.path.length - 1];
+      let modify_read = Object.assign({}, item_read, {
+        properties: Object.assign({}, item_read.properties, {
+          position,
+        }),
+      });
 
-      read = 
+      if (position === NotePositions.ABSOLUTE) {
+        modify_read.properties.x = Math.max(item_clientOffset.x - target_clientRect.left, 0);
+        modify_read.properties.y = Math.max(item_clientOffset.y - target_clientRect.top, 0);
+      }
+      // else (position === NotePositions.STATIC);  preserve original xy coordinates
+
+      dispatch(moveNote({modify_read}));
     }
     else {
-      let prev_read = item.path[item.path.length - 1];
-      let next_read;
+      let delete_read = item_read;
 
-      item.deleted_super_reads.some(deleted_super_read => {
-        if (path[path.length - 1 - depth].properties.end_id === deleted_super_read.properties.start_id) {
-          next_read = deleted_super_read;
+      let create_read = {
+        type: LinkTypes.READ,
+        properties: {},
+      };
+
+      item.deleted_reads.some(deleted_item_read => {
+        if (target_read.properties.end_id === deleted_item_read.properties.start_id) {
+          // if read existed between these notes before, reuse that read
+          create_read = deleted_item_read;
           return true;
         }
         return false;
       });
-      if (next_read == null) {
-        next_read = {
-          type: LinkTypes.READ,
-        };
-      }
 
-      next_read = Object.assign({}, next_read, {
-        properties: Object.assign({}, next_read.properties, {
+      if (position === NotePositions.ABSOLUTE) {
+
+      }
+      else { // (position === NotePostions.STATIC)
+        create_read.properties.x = 0;
+        create_read.properties.y = 0;
+      }
+      create_read = Object.assign({}, create_read, {
+        properties: Object.assign({}, create_read.properties, {
           position,
           x: (position === NotePositions.STATIC)
             ? 0
@@ -100,6 +118,8 @@ const dropTarget = {
           y: (position === NotePositions.STATIC) ? 0 : Math.max(item_clientOffset.y - target_clientRect.top, 0)
         }),
       });
+
+      dispatch() // delete, create (substitute) a relationship (delete_notes, delete_links, create_notes, create_links)
     }
 
     dispatch(moveNote({

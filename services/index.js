@@ -14,6 +14,7 @@ module.exports = function({neo4j_driver_config}) {
 
   return {
     setFeature,
+    getNewAuthor,
     getInventory,
   };
 
@@ -169,7 +170,6 @@ module.exports = function({neo4j_driver_config}) {
         UNWIND {links} AS link
         FOREACH (is_user_link IN CASE WHEN link.properties.author_id = {user_id} THEN [1] ELSE [] END |
           MATCH (n1:Note {id: link.properties.start_id}), (n2:Note {id: link.properties.end_id})
-          FOREACH (is_current IN CASE WHEN link.type = 'CURRENT'
           FOREACH (is_write IN CASE WHEN link.type = 'WRITE' THEN [1] ELSE [] END |
             MERGE (n1)-[w:WRITE {id: link.properties.id}]->(n2)
             SET w += link.properties
@@ -250,17 +250,58 @@ module.exports = function({neo4j_driver_config}) {
         });
   }
 
+  function getNewAuthor({t, x, y, z}) {
+    const author_id = uuid();
+    const read_id = uuid();
+
+    setFeature({ // create and return a new (anonymous) author
+      user_id: author_id,
+      note_by_id: {
+        [author_id]: {
+          properties:{
+            id: author_id,
+            author_id,
+            value: author_id,
+            create_t: t,
+            create_x: x,
+            create_y: y,
+            create_z: z,
+          },
+        },
+      },
+      link_by_id: {
+        [read_id]: {
+          properties: {
+            id: read_id,
+            start_id: author_id,
+            end_id: author_id,
+            author_id,
+            current: 1, // if a READ is on the current_path (of READs) from Author to current_Note (the selected Note), this is the index (min = 1) from the current_Note; here, we indicate the Author is the current_Note
+            frame: 1, // if a READ is on the frame_path (of READs) form Author to frame_Note (the maximized Note), this is the index (min = 1) from the frame_Note; here, we indicate that the Author is the frame_Note
+            position: NotePositions.STATIC,
+            x: 0,
+            y: 0,
+            display: NoteDisplays.BODY,
+            body: NoteBodies.PLANE,
+            create_t: t,
+            create_x: x,
+            create_y: y,
+            create_z: z,
+          },
+        },
+      },
+    });
+  }
+
   function getInventory(user_id) {
     return new Promise((resolve, reject) => {
       const params = {
         user_id
       };
       const query = `
-        MATCH (user:Note:Author {id: {user_id}})
-        OPTIONAL MATCH ()-[:READ {author_id: {user_id}}]->(note:Note)
+        MATCH ()-[:READ {author_id: {user_id}}]->(note:Note)
         OPTIONAL MATCH (note)-[link:WRITE|READ]-(note2:Note)
         RETURN
-          user,
           note,
           link,
           note2
@@ -279,9 +320,6 @@ module.exports = function({neo4j_driver_config}) {
         .subscribe({
           onNext: record => {
             record_count++;
-
-            const user = record.get('user');
-            state.note_by_id[user.properties.id] = user;
 
             const note = record.get('note');
             state.note_by_id[note.properties.id] = note;
@@ -305,6 +343,7 @@ module.exports = function({neo4j_driver_config}) {
         });
     });
   }
+
 
 }
 

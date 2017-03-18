@@ -114,7 +114,7 @@ Note.propTypes = {
   dispatch: PropTypes.func,
   note: PropTypes.object,
   sub_reads: PropTypes.arrayOf(PropTypes.object),
-  deleted_super_reads: PropTypes.arrayOf(PropTypes.object),
+  deleted_reads: PropTypes.arrayOf(PropTypes.object),
   // drag n drop
   is_dragging: PropTypes.bool,
   connectDragSource: PropTypes.func,
@@ -144,39 +144,38 @@ export const NoteContainer = flow(
     }, []);
 
     const super_link_by_id = link_by_id_by_end_id[note.properties.id];
-    const deleted_super_reads = Object.keys(super_link_by_id).reduce((deleted_super_reads, id) => {
+    const deleted_reads = Object.keys(super_link_by_id).reduce((deleted_reads, id) => {
       const super_link = super_link_by_id[id];
       if (
         super_link.type === LinkTypes.READ &&
         super_link.properties.author_id === user.properties.id &&
         super_link.properties.deleted_t != null
       ) {
-        return [...deleted_super_reads, super_link];
+        return [...deleted_reads, super_link];
       }
       else {
-        return deleted_super_reads;
+        return deleted_reads;
       }
     }, []);
 
     return {
       note,
       sub_reads,
-      deleted_super_reads,
+      deleted_reads,
     };
   }),
   DragSource(
     NodeLabels.Note,
     {
       beginDrag: (props, monitor, component) => {
-        const { user, note, path } = props;
-        const clientRect = findDOMNode(component).getBoundingClientRect();
-
+        const { user, path, note, deleted_reads } = props;
+        
         const item = {
           user,
           path,
           note,
-          deleted_super_reads,
-          clientRect,
+          deleted_reads,
+          clientRect: findDOMNode(component).getBoundingClientRect(),
         };  
         console.log('beginDrag', item);
 

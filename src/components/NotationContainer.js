@@ -1,6 +1,8 @@
 import React, { PropTypes } from 'react';
 
-import { AuthorContainer } from './AuthorContainer';
+import { LinkTypes } from '../types';
+
+import { User } from './User';
 import { CurrentContainer } from './CurrentContainer';
 
 function Notation(props) {
@@ -33,6 +35,7 @@ function Notation(props) {
           overflow: 'auto',
           textAlign: 'left',
         }}>
+          <AuthContainer user={user} />
           <CurrentContainer user={user} current_path={current_path} />
         </div>
       </div>
@@ -43,29 +46,45 @@ function Notation(props) {
       <div id='notes' style={{
         display: 'inline-block',
       }}>
-        <AuthorContainer user={user} current_path={current_path} />
+        <User user={user} current_path={current_path} />
       </div>
     </div>
   );
 }
 
 export const NotationContainer = connect(state => {
-  const { user_id, note_by_id, link_by_id_by_start_id } = state;
+  const { user_id, note_by_id, link_by_id, link_by_id_by_start_id, link_by_id_by_end_id } = state;
 
-  const current_path = []; // path of current READs; path always refers to READ path
+  if (!user_id) {
+    return {
+      user: null,
+      current_path: [],
+    };
+  }
 
-  let note_id = user_id
-  while (note_id != null) {
-    const sub_link_by_id = link_by_id_by_start_id[note_id];
+  let user_read;
+  Object.keys(link_by_id_by_end_id[user_id]).some(link_id => {
+    const link = link_by_id[link_id] 
+    if (
+      link.properties.author_id === user_id && 
+      link.type === LinkTypes.READ
+    ) {
+      user_read = link;
+      return true;
+    }
+    return false;
+  });
 
-    note_id = null;
-
-    Object.keys(sub_link_by_id).some(id => {
-      const sub_link = sub_link_by_id[id];
-
-      if (sub_link.properties.author_id === user_id && sub_link.properties.current) { // current only exists on READs
-        current_path.push(sub_link);
-        note_id = sub_link.properties.end_id;
+  const current_path = [user_read];
+  while (current_path[current_path.length - 1].properties.current > 1) {
+    Object.keys(link_by_id_by_start_id[ current_path[current_path.length - 1].properties.end_id ]).some(link_id => {
+      const link = link_by_id[link_id];
+      if (
+        link.properties.author_id === user_id &&
+        link.properties.current > 0 &&
+        link.type === LinkTypes.READ
+      ) {
+        current_path.push(link);
         return true;
       }
       return false;

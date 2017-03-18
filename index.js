@@ -64,41 +64,22 @@ if (server.get('env') === 'production') {
 server.use(session(session_options));
 
 
-server.get('/api/inventory', (req, res) => {
+server.post('/api/init', (req, res) => {
   new Promise((resolve, reject) => {
-    if (req.session.user_id == req.query.user_id) {
-      resolve(req.session.user_id);
-    }
-    else {
-      const { t, x, y, z } = req.query;
-      const id = uuid();
+      if (req.session.user_id === req.body.user_id) {
+        resolve(req.session.user_id);
+      }
+      else {
+        const { t, x, y, z } = req.body;
 
-      services.setFeature({ // create and return a new (anonymous) author
-        user_id: id,
-        note_by_id: {
-          [id]: {
-            properties:{
-              id,
-              author_id: id,
-              create_t: t,
-              create_x: x,
-              create_y: y,
-              create_z: z,
-            },
-          },
-        },
-        link_by_id: {},
-      }).then(({user_id}) => {
-          if (user_id) {
+        return services.getNewAuthor({t, x, y, z})
+          .then(({user_id}) => {
             req.session.user_id = user_id;
             resolve(req.session.user_id);
-          }
-          else {
-            reject('failed to create new author for user');
-          }
-        });
-    }
-  }).then(user_id => {
+          });
+      }
+    })
+    .then(user_id => {
       return services.getInventory(user_id);
     })
     .then(state => {
@@ -109,13 +90,57 @@ server.get('/api/inventory', (req, res) => {
     });
 });
 
+server.post('/api/logout', (req, res) => {
+  new Promise((resolve, reject) => {
+      if (req.session.user_id === req.body.user_id) {
+        resolve(req.session.user_id);
+      }
+      else {
+        reject('invalid user_id');
+      }
+    })
+    .then(logout_user_id => {
+      // TODO user prev_user_id for logout action?
+      const {t, x, y, z} = req.body;
+
+      return services.getNewAuthor({t, x, y, z})
+        .then(({user_id}) => {
+          req.session.user_id = user_id;
+          return req.session.user_id;
+        });
+    })
+    .then(user_id => {
+      return services.getInventory(user_id);
+    })
+    .then(state => {
+      res.status(200).json({data: state});
+    })
+    .catch(err => {
+      req.status(500).json({data: err.message});
+    });
+});
+
+server.post('/api/login', (req, res) => {
+  new Promise((resolve, reject) => {
+      if (req.session.user_id === req.body.user_id) {
+        resolve(req.session.user_id);
+      }
+      else {
+        reject('invalid user_id');
+      }
+    })
+  .then(logout_user_id => {
+
+  })
+});
+
 server.put('/api/feature', (req, res) => {
   new Promise((resolve, reject) => {
-    if (req.session.user_id == req.body.user_id) {
+    if (req.session.user_id === req.body.user_id) {
       resolve(req.body);
     }
     else {
-      reject('invalid user id');
+      reject('invalid user_id');
     }
   }).then(({user_id, note_by_id, link_by_id}) => {
       return services.setFeature({user_id, note_by_id, link_by_id});

@@ -1,13 +1,11 @@
 import React, { PropTypes } from 'react';
 import { connect } from 'react-redux'; 
 
-import { Positions, Displays } from '../types';
+import { NotePositions, NoteDisplays } from '../types';
 
 import { cancelNote, setNote, commitNote, currentNote } from '../actions';
 
 import { Editor, EditorState, ContentState } from 'draft-js';
-
-export const NoteContainer = connect()(Note);
 
 class Note extends React.Component {
   constructor(props) {
@@ -281,3 +279,6 @@ Note.propTypes = {
   connectDragSource: PropTypes.func,
   dispatch: PropTypes.func.isRequired,
 };
+
+export const NoteContainer = connect()(Note);
+
