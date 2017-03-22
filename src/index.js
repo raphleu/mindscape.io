@@ -6,8 +6,6 @@ import { createStore, applyMiddleware } from 'redux';
 import thunkMiddleware from 'redux-thunk';
 import { rootReducer } from './reducers';
 
-import { getLocalStorageState } from './util';
-
 import { browserHistory } from 'react-router';
 import { syncHistoryWithStore } from 'react-router-redux'
 
@@ -29,7 +27,7 @@ import { App } from './components/App';
 */
 
 const logger = store => next => action => {
-  console.group(action.type, action.comment);
+  console.group(action.type);
   console.info('dispatching', action);
 
   const result = next(action);
@@ -42,7 +40,6 @@ const logger = store => next => action => {
 
 const store = createStore(
   rootReducer,
-  getLocalStorageState(),
   applyMiddleware(
     thunkMiddleware,
     logger

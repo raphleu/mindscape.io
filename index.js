@@ -1,5 +1,6 @@
 const mindscape = require('./services/index.js');
 const express = require('express');
+const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const path = require('path');
 
@@ -31,7 +32,7 @@ const server = express();
 
 server.set('port', (process.env.PORT || 3000));
 
-server.use(logger('dev'));
+server.use(morgan('dev'));
 
 server.use(bodyParser.json());
 
@@ -63,31 +64,78 @@ if (server.get('env') === 'production') {
 
 server.use(session(session_options));
 
-
 server.post('/api/init', (req, res) => {
   new Promise((resolve, reject) => {
       if (req.session.user_id === req.body.user_id) {
         resolve(req.session.user_id);
       }
       else {
-        const { t, x, y, z } = req.body;
-
-        return services.getNewAuthor({t, x, y, z})
-          .then(({user_id}) => {
-            req.session.user_id = user_id;
-            resolve(req.session.user_id);
-          });
+        reject('invalid user_id');
       }
     })
     .then(user_id => {
-      return services.getInventory(user_id);
+      return services.getPresence(user_id);
     })
     .then(state => {
       res.status(200).json({data: state});
     })
     .catch(err => {
-      req.status(500).json({data: err.message});
+      console.error(err);
+      res.status(500).json({data: err.message});
     });
+});
+
+server.post('/api/register', (req, res) => {
+  const { t, x, y, z } = req.body;
+
+  services.getNewAuthor({t, x, y, z})
+    .then(({user_id}) => {
+      // TODO use prev user_id for logout action?
+      req.session.user_id = user_id;
+      resolve(req.session.user_id);
+    })
+    .then(user_id => {
+      return services.getPresence(user_id);
+    })
+    .then(state => {
+      res.status(200).json({data: state});
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({data: err.message});
+    });
+});
+
+server.post('/api/login', (req, res) => {
+  new Promise((resolve, reject) => {
+      if (req.session.user_id === req.body.user_id) {
+        resolve(req.session.user_id);
+      }
+      else {
+        reject('invalid user_id');
+      }
+    })
+    .then(logout_user_id => {
+      // TODO user prev_user_id for logout action?
+      const {name, pass} = req.body;
+
+      return Promise.resolve(services.getAuthorId({name, pass}))
+        .catch(error => {
+          res.status(400).json({data: error.message});
+        });
+    })
+    .then(({user_id}) => {
+      if (user_id) {
+        services.getPresence(user_id)
+          .then(state => {
+            res.status(200).json({data: state});
+          });
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({data: err.message});
+    })
 });
 
 server.post('/api/logout', (req, res) => {
@@ -110,45 +158,34 @@ server.post('/api/logout', (req, res) => {
         });
     })
     .then(user_id => {
-      return services.getInventory(user_id);
+      return services.getPresence(user_id);
     })
     .then(state => {
       res.status(200).json({data: state});
     })
     .catch(err => {
-      req.status(500).json({data: err.message});
+      console.error(err);
+      res.status(500).json({data: err.message});
     });
 });
 
-server.post('/api/login', (req, res) => {
+server.post('/api/graph', (req, res) => {
   new Promise((resolve, reject) => {
       if (req.session.user_id === req.body.user_id) {
-        resolve(req.session.user_id);
+        resolve(req.body);
       }
       else {
         reject('invalid user_id');
       }
     })
-  .then(logout_user_id => {
-
-  })
-});
-
-server.put('/api/feature', (req, res) => {
-  new Promise((resolve, reject) => {
-    if (req.session.user_id === req.body.user_id) {
-      resolve(req.body);
-    }
-    else {
-      reject('invalid user_id');
-    }
-  }).then(({user_id, note_by_id, link_by_id}) => {
-      return services.setFeature({user_id, note_by_id, link_by_id});
+    .then(({user_id, post_by_id, link_by_id}) => {
+      return services.setGraph({user_id, post_by_id, link_by_id});
     })
     .then(state => {
       res.status(200).json({data: state});
     })
     .catch(err => {
+      console.error(err);
       res.status(500).json({data: err.message});
     });
 });

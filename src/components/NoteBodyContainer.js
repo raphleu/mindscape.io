@@ -1,120 +1,53 @@
-
 import React, { PropTypes } from 'react';
 import { connect } from 'react-redux';
 
-import { Relationships, Displays, Directions, Positions, DragTypes } from '../types';
+import { LinkTypes, NotePositions, NoteDisplays, NoteBodies } from '../types';
 
-import { stageNote } from '../actions';
+import { createNote } from '../actions';
 
 //import * as force from 'd3-force';
 
-import { ReadDropTargetContainer } from './ReadDropTargetContainer';
-import { ReadContainer } from './ReadContainer';
+import { NoteDropTargetContainer } from './NoteDropTargetContainer';
+import { NoteContainer } from './NoteContainer';
 //import { ArrowContainer } from './ArrowContainer';
 
-export class SubReads extends React.Component { //SubReadsContainer
+export class NoteBody extends React.Component { //NoteBodyContainer
   constructor(props) {
     super(props);
 
-    this.handlePrimerClick = this.handlePrimerClick.bind(this);
+    this.createChildNote = this.createChildNote.bind(this);
     // this.force = d3.force
     // draw axes
   }
 
-  handlePrimerClick(event) {
+  createChildNote(event) {
     event.stopPropagation();
-    const { user, note, path, dispatch } = this.props;
-    dispatch(stageNote(user, note, path[0]));
+    const { user, path, out_user_pres, dispatch } = this.props;
+    //dispatch(createNote({user, }));
   }
 
   render() {
-    const { path, sub_reads } = this.props;
+    const { user, main_path, path, out_user_pres } = this.props;
 
-    const is_sequence = (path[0].properties.display === Displays.SEQUENCE);
-    const is_plane = (path[0].properties.display === Displays.PLANE);
+    const { body, radius } = path[path.length - 1].properties;
 
-    if (!is_sequence && !is_plane) {
-      console.error('invalid display type');
-      return null;
-    }
-
-    let ordered_sub_reads;
-    if (is_sequence) {
-      ordered_sub_reads = sub_reads;
-    }
-    else {
-      const dock_sub_reads = [];
-      const drift_sub_reads = [];
-
-      sub_reads.forEach(sub_read => {
-        if (sub_read.properties.position === Positions.DOCK) {
-          dock_sub_reads.push(sub_read);
+    let pres = out_user_pres;
+    if (body === NoteBodies.PLANE) { // re order pres so that absolute positioned Notes are stacked with lower index on top
+      pres = [];
+      const absolute_pres = [];
+      out_user_pres.forEach(pre => {
+        if (pre.properties.position === NotePositions.STATIC) {
+          pres.push(pre); // maintain ordering
         }
-        else if (sub_read.properties.position === Positions.DRIFT) {
-          drift_sub_reads.unshift(sub_read);
+        else {
+          absolute_pres.unshift(pre);
         }
       });
-
-      ordered_sub_reads = [...dock_sub_reads, ...drift_sub_reads];
+      pres.push.apply(absolute_pres);
     }
 
-    const radius = is_sequence ? 'auto' : path[0].properties.radius;
-
-    // <div className='background' style={{
-    //   position: 'absolute',
-    //   left: 0,
-    //   top: 0,
-    //   width: '100%',
-    //   height: '100%',
-    //   backgroundColor: 'floralwhite',
-    //   opacity: .08,
-    //   cursor: 'default',
-    // }}/>
-    const content = (
-      <div className='subreads-content' style={{
-        width: radius,
-        height: radius,
-        resize: 'both',
-      }}>
-        <div className='primer' onClick={this.handlePrimerClick} style={{
-          display: 'inline-block',
-          //verticalAlign: 'middle',
-          float: 'left',
-          margin: 2,
-          border: '1px solid lavender',
-          borderTopRightRadius: 4,
-          borderBottomLeftRadius: 4,
-          cursor: 'pointer',
-        }}>
-          <ReadDropTargetContainer path={path} depth={0} item_position={Positions.DOCK}>
-            <div className='primer-content' style={{
-              border: '1px solid azure',
-              borderTopRightRadius: 4,
-              borderBottomLeftRadius: 4,
-              height: 12, //this.props.isOver ? 200 : 0,
-              width: 80,
-              backgroundColor: 'white',
-            }}/>
-          </ReadDropTargetContainer>
-        </div>
-        {
-          ordered_sub_reads.map(sub_read => {
-            const sub_path = [sub_read, ...path];
-            return <ReadContainer key={'read-'+sub_read.id} path={sub_path} />;
-          })
-        }
-        <div style={{clear: 'both'}} />
-      </div>
-    );
-
-    const content2 = is_sequence ? content : ( // enable drop as child
-      <ReadDropTargetContainer path={path} depth={0} item_position={Positions.DRIFT}>
-        { content }
-      </ReadDropTargetContainer>
-    );
-   
     return (
-      <div className='subreads' style={{
+      <div className='notebody' style={{
         position: 'relative',
         //backgroundColor:'white',
         margin: 2,
@@ -124,40 +57,61 @@ export class SubReads extends React.Component { //SubReadsContainer
         borderBottomLeftRadius: 2,
         borderTopRightRadius: 2,
       }}>
-        { content2 }
+        <div className='notebody-content' style={{
+          width: (body === NoteBodies.LIST) ? 'auto' : path[0].properties.radius || 800,
+          height: (body === NoteBodies.LIST) ? 'auto' : path[0].properties.radius || 800,
+          resize: 'both',
+        }}>
+          <div className='primer' onClick={this.createChildNote} style={{
+            display: 'inline-block',
+            //verticalAlign: 'middle',
+            float: 'left',
+            margin: 2,
+            border: '1px solid lavender',
+            borderTopRightRadius: 4,
+            borderBottomLeftRadius: 4,
+            cursor: 'pointer',
+          }}>
+            <div className='primer-content' style={{
+              border: '1px solid azure',
+              borderTopRightRadius: 4,
+              borderBottomLeftRadius: 4,
+              height: 12, //this.props.isOver ? 200 : 0,
+              width: 80,
+              backgroundColor: 'white',
+            }}/>
+          </div>
+          {
+            pres.map(pre => {
+              const child_path = [...path, pre];
+              return (
+                <NoteContainer
+                  key={'note-'+pre.properties.end_id}
+                  user={user}
+                  main_path={main_path}
+                  path={child_path}
+                  peer_user_pres={pres}
+                />
+              );
+            })
+          }
+          <div style={{clear: 'both'}} />
+        </div>
       </div>
     );
   }
 }
 
-SubReads.propTypes = {
+NoteBody.propTypes = {
   user: PropTypes.object.isRequired,
-  note: PropTypes.object.isRequired,
+  main_path: PropTypes.arrayOf(PropTypes.object).isRequired,
   path: PropTypes.arrayOf(PropTypes.object).isRequired,
-  sub_reads: PropTypes.arrayOf(PropTypes.object).isRequired,
+  in_user_defs: PropTypes.arrayOf(PropTypes.object).isRequired,
+  out_user_pres: PropTypes.arrayOf(PropTypes.object).isRequired,
+  deleted_out_user_pres: PropTypes.arrayOf(PropTypes.object),
+  //
   dispatch: PropTypes.func.isRequired,
   //arrow_ids: PropTypes.arrayOf(PropTypes.number),
 }
 
-export const SubReadsContainer = connect()(SubReads);
-
-/*
-while(sub_read_ids.length > 0) {
-  const sub_read_id = sub_read_ids.shift();
-
-  const sub_read = state.relationship_by_id[sub_read_id];
-  const sub_note = state.node_by_id[sub_read.start];
-
-  // get arrows, i.e. links where both end-notes are in the space
-  sub_note.link_ids.forEach(link_id => {
-    if (registered[link_id]) {
-      arrow_ids.push(link_id);
-    }
-    else {
-      registered[link_id] = true;
-    }
-  });
-
-  // push the read_notes that are nested within this read_note (the sub_read_notes)
-  [].push.apply(sub_read_ids, sub_read.properties.sub_read_ids);
-}*/
+export const NoteBodyContainer = connect()(NoteBody);

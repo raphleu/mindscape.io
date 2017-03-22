@@ -1,15 +1,15 @@
 const bcrypt = require('bcryptjs');
 
-export const authentication = (function() {
+module.exports.authentication = (function() {
   return {
-    hashPassword,
-    comparePassword,
+    hashPass,
+    comparePass,
   };
 
-  function hashPassword(password) {
+  function hashPass(pass) {
     return new Promsie((resolve, reject) => {
       const saltRounds = 10;
-      bcrypt.hash(password, saltRounds, (err, hash) => {
+      bcrypt.hash(pass, saltRounds, (err, hash) => {
         if (err) {
           reject(err);
         }
@@ -20,9 +20,9 @@ export const authentication = (function() {
     });
   }
 
-  function comparePassword({password, hash}) {
+  function comparePass({pass, hash}) {
     return new Promise((resolve, reject) => {
-      bcrypt.compare(password, hash, (err, is_match) => {
+      bcrypt.compare(pass, hash, (err, is_match) => {
         if (err) {
           reject(err);
         }

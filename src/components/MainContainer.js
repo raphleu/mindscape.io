@@ -1,11 +1,7 @@
 import React, { PropTypes } from 'react';
-
 import { connect } from 'react-redux';
 
 import { flow } from 'lodash';
-
-import { init } from '../actions';
-
 
 import { DragDropContext } from 'react-dnd';
 import HTML5Backend from 'react-dnd-html5-backend';
@@ -16,28 +12,8 @@ class Main extends React.Component {
   constructor(props) {
     super(props);
   }
-
-  componentDidMount() {
-    const { dispatch } = this.props;
-    dispatch(init());
-  }
-
   render() {
-    const fetch_indicator = fetching ? (
-      <div style={{
-        //display: fetching ? 'block' : 'none',
-        position: 'absolute',
-        right: 0,
-        bottom: 0,
-        border: '1px solid lavender',
-        borderTopRightRadius: 4,
-        borderBottomLeftRadius: 4,
-        width: 17,
-        height: 12,
-        backgroundColor: 'white',
-      }} />
-    ) : null;
-
+    const { fetching } = this.props;
     // TODO add other nav options to header?
     return (
       <div id='main' >
@@ -48,7 +24,23 @@ class Main extends React.Component {
           top: 2,
           left: 167,
         }}>
-          { fetch_indicator }
+          {
+            fetching 
+              ? (
+                <div style={{
+                  position: 'absolute',
+                  right: 0,
+                  bottom: 0,
+                  border: '1px solid lavender',
+                  borderTopRightRadius: 4,
+                  borderBottomLeftRadius: 4,
+                  width: 17,
+                  height: 12,
+                  backgroundColor: 'white',
+                }} />
+              )
+              : null
+          }
           <div id='logo' style={{
             position: 'absolute',
             left: -15,
@@ -96,17 +88,19 @@ class Main extends React.Component {
         <div className='spacer' style={{
           height: 32,
         }} />
-        {this.props.children}
+        { this.props.children }
       </div>
     );
   }
+
 }
 
 export const MainContainer = flow(
   DragDropContext(HTML5Backend),
   connect(state => {
+    const { fetching } = state;
     return {
-      fetching: state.fetching,
+      fetching: fetching,
     };
   }),
 )(Main);

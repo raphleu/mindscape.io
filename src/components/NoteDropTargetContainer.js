@@ -64,6 +64,9 @@ const dropTarget = {
     // get from drop target? or from item?
     // let item hold deleted super_reads!
 
+
+    // create another DropTarget type for inserting in list?
+
     const target_read = path[path.length - 1 - depth];
     const item_read = item.path[item.path.length - 1];
 
@@ -79,7 +82,12 @@ const dropTarget = {
         modify_read.properties.x = Math.max(item_clientOffset.x - target_clientRect.left, 0);
         modify_read.properties.y = Math.max(item_clientOffset.y - target_clientRect.top, 0);
       }
-      // else (position === NotePositions.STATIC);  preserve original xy coordinates
+      else { // (position === NotePositions.STATIC)
+        if (depth === 1) {
+          // adjust index... shit.
+        }
+        // else preserve original xy coordinates
+      }
 
       dispatch(moveNote({modify_read}));
     }
