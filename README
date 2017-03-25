@@ -1,47 +1,31 @@
 http://mindscape.io
 (msio
-  (users)
-  (client (react) (redux))
-  (server (nodejs) (neo4j))
-  (model (nestable web) (graph outline)
-    (node)
-    ((define B A)
-      (A <-- B)
-      (an arrow between from B to A)
-      (B Defines A)
-      (A is abstract while B is specific
-        (A is general while B is concrete))
-      ((A)<-[:DEFINE]-(B)
-        (msio (neo4j)))
-    )
-    ((present A B)
-      (A (B))
-      (a nesting of B in A)
-      (A Presents B)
-      (A is container while B is component)
-      (A is function while B is parameter)
-      (A is frame while B is object)
-      (A is object while B is detail)
-      ((A)-[:PRESENT]->(B))
-    )
-  
-)
-  
-Defines are rendered as arrows between Nodes.
-Presents are rendered as 
+  (react redux nodejs neo4j)
+  ((node --> (user node))
+    (post)
+    (create (t x y z))
+    (modify (t x y z))
+    (commit (t x y z))
+    (delete (t x y z))))
+  ((define (A node) (B node))
+    (see (A <-- B))
+    (hear (A is defined by B))
+    (think (abstractly A specificly B)))
+  ((present (A node) (B node))
+    (see (A (B)))
+    (hear (A presents B))
+    (think (A function) (B parameter))
+    (assume (B_i (path A B) (present A B_i)))
+) 
 
-((A (B)) (A (node (connected by (Define path
-                       (arbitrary directionality)
-                       (between (A) (B))
-                     )
-       )
-     )
-  ))
-  
- 
 
-(A (B)) is similar to (A)<--(B)
-
+Visualization
+  (A <-- B) is similar to (A (B))
+    (having an index on a list is symmetric with having an arrow, reference to that item/ having its address)
+  (A1 <-- B --> A2) is similar to (A1 (B) A2) but if you pull A1 away, does B move with A1 or A2? which is more elastic?
+    in the graph, B gets its own position/identity
+    also, (A1 (B) A2) is ambiguous with (A1 (B (A2)) when we use list composition
+    thus, we need 2 structures w/ redundancy  ((A1 (B)) 
 The graph is more general than nested containers because 
 graph converted to nested containers forms some type of venn diagram type blurry containers
 Nested containers converted to a graph forms a directed tree
