@@ -2,22 +2,29 @@ http://mindscape.io
 
 (msio
   (reactjs redux nodejs neo4j)
-  node (node Author) t x y z post <--
-    store (id Author (created t x y z) post))
-  wire (node Author) t x y z (node Parent)(node Child) <--
-    store (id Author Parent Child (created t x y z)))
-  dish (node Author) t x y z (node Container)(node Child) <--
-    store (id Author Container Child (created t x y z)))
+  
+  (node (id t x y z author_id post)
+    store (id (initial t x y z) Author post))
+  (wire (id t x y z author_id parent_id child_id)
+    store (id (initial t x y z) author_id parent_id child_id)
+    render ((get_node parent_id)-->(get_node child_id))
+    assert ((get_node child_id) has at least one wire in))
+  (dish (id t x y z author_id container_id child_id)
+    store (id (initial t x y z) author_id container_id child_id)
+    render (get_node container_id (get_node child_id))
+    assert ((get_node child_id) has only one dish in))
     
-  register <--
-    wire (node Author)(node View)
+  (register (t x y z)
+    (node t x y z
+    ((wire t x y z (node t y x z Author ())(node View)
+    (dish (node Author)(nodeView)))
     
-  create_node (node Author)(node Container) <--
-    ((wire (node Container) (node Child))
-    (dish (node Parent) (node Child)))
-  modify_node (node Author) t x y z A post <--
+  (create_node (t x y z (node Author)(node Container))
+    ((wire (node Container)(node Child))
+    (dish (node Parent)(node Child)))
+  modify_node ((node Author) t x y z A post)
     store (A Author (modified t x y z) post)
-  shroud_node (node Author) t x y z A) <-- 
+  shroud_node ((node Author) t x y z A))
     store (A Author (commited t x y z))
 
   move_node
