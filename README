@@ -1,34 +1,56 @@
 http://mindscape.io
+
 (msio
-  (react redux nodejs neo4j)
-  ((node --> (user node))
-    (post)
-    (create (t x y z))
-    (modify (t x y z))
-    (commit (t x y z))
-    (delete (t x y z))))
-  ((define (A node) (B node))
-    (see (A <-- B))
-    (hear (A is defined by B))
-    (think (abstractly A specificly B)))
-  ((present (A node) (B node))
-    (see (A (B)))
-    (hear (A presents B))
-    (think (A function) (B parameter))
-    (assume (B_i (path A B) (present A B_i)))
+  (reactjs redux nodejs neo4j)
+  node (node Author) t x y z post <--
+    store (id Author (created t x y z) post))
+  wire (node Author) t x y z (node Parent)(node Child) <--
+    store (id Author Parent Child (created t x y z)))
+  dish (node Author) t x y z (node Container)(node Child) <--
+    store (id Author Container Child (created t x y z)))
+    
+  register <--
+    wire (node Author)(node View)
+    
+  create_node (node Author)(node Container) <--
+    ((wire (node Container) (node Child))
+    (dish (node Parent) (node Child)))
+  modify_node (node Author) t x y z A post <--
+    store (A Author (modified t x y z) post)
+  shroud_node (node Author) t x y z A) <-- 
+    store (A Author (commited t x y z))
+
+  move_node
+    delete prev dish
+    store next dish
+  
 ) 
+
+wire, dish are verbs!
+
+from the old model:
+wire <-- define!
+dish <-- present!
+
+
+
 
 
 Visualization
   (A <-- B) is similar to (A (B))
-    (having an index on a list is symmetric with having an arrow, reference to that item/ having its address)
-  (A1 <-- B --> A2) is similar to (A1 (B) A2) but if you pull A1 away, does B move with A1 or A2? which is more elastic?
+    (having an index on a list is similar to having an arrow, reference to that item/ having its address)
+  (A1 <-- B --> A2) is similar to (A1 (B) A2) but if you pull A1 away, does B move with A1 or A2?
     in the graph, B gets its own position/identity
-    also, (A1 (B) A2) is ambiguous with (A1 (B (A2)) when we use list composition
-    thus, we need 2 structures w/ redundancy  ((A1 (B)) 
-The graph is more general than nested containers because 
-graph converted to nested containers forms some type of venn diagram type blurry containers
-Nested containers converted to a graph forms a directed tree
+    also, (A1 (B) A2) is ambiguous with (A1 (B (A2)) of standard list/function composition syntax
+    thus, if A1 and A2 are both displayed (with no overlap),
+      then B appears in two parent Nodes, i.e. ((A1 (B)) (A2 (B)))
+        having the same object in two containers (i.e. in 2 places at one time) violates classical object mechanics,
+        but I think this kinda pattern comes up in quantum entanglement?
+  Nesting nodes is helpful, bc we can move groups of objects together.
+    Maybe an object can be in two places at once in the view, but then they must be linked by a line?
+      I dislike this because classical objects seem intuitive-- nested folders metaphor
+    So a node can only be inside one of its Parent nodes 
+
 
 trees 
   single relationship in one direction
