@@ -3,41 +3,47 @@ http://mindscape.io
 (msio
   (reactjs redux nodejs neo4j)
   
-  (node (id t x y z author_id post)
-    store (id (initial t x y z) Author post))
-  (wire (id t x y z author_id parent_id child_id)
-    store (id (initial t x y z) author_id parent_id child_id)
+  (node (t x y z author_id val id)
+    post (id val author_id (init t x y z)(edit ()()()())(commit ()()()())(shroud ()()()())))
+  (wire (t x y z author_id parent_id child_id id)
+    post (id child_id parent_id author_id (init t x y z)(edit ()()()())(commit ()()()())(shroud ()()()()))
     render ((get_node parent_id)-->(get_node child_id))
-    assert ((get_node child_id) has at least one wire in))
-  (dish (id t x y z author_id container_id child_id)
-    store (id (initial t x y z) author_id container_id child_id)
+    assert ((get_node child_id) has at least one parent wire))
+  (nest (t x y z author_id container_id child_id id)
+    post (id child_id container_id author_id (init t x y z)(edit ()()()())(commit ()()()())(shroud ()()()()))
     render (get_node container_id (get_node child_id))
-    assert ((get_node child_id) has only one dish in))
+    assert ((get_node child_id) has only one container nest))
     
-  (register (t x y z)
-    (node t x y z
-    ((wire t x y z (node t y x z Author ())(node View)
-    (dish (node Author)(nodeView)))
+  (register (t x y z author_id wire_id view_id nest_id)
+    (node (t x y z author_id () author_id))
+    (node (t x y z author_id () view_id))
+    (wire (t x y z author_id author_id view_id wire_id))
+    (nest (t x y z author_id author_id view_id nest_id)))
     
-  (create_node (t x y z (node Author)(node Container))
-    ((wire (node Container)(node Child))
-    (dish (node Parent)(node Child)))
-  modify_node ((node Author) t x y z A post)
-    store (A Author (modified t x y z) post)
+  (add_node (t x y z author_id parent_id wire_id child_id nest_id)
+    (node (t x y z author_id () child_id))
+    (wire (t x y z author_id parent_id child_id wire_id))
+    (nest (t x y z author_id parent_id child_id nest_id)))
+  (edit_node (t x y z author_id node_id val)
+    (cond (not get_commit get_node id)
+      post (id val author_id (get_init get_node id)(edit t x y z)(commit ()()()())(shroud ()()()()) ))
+  (commit_node (t x y z author_id id)
+    
+    post (id (get_val get_node id) author_id (
   shroud_node ((node Author) t x y z A))
     store (A Author (commited t x y z))
 
   move_node
-    delete prev dish
-    store next dish
+    delete prev nest
+    store next nest
   
 ) 
 
-wire, dish are verbs!
+wire, nest are verbs!
 
 from the old model:
 wire <-- define!
-dish <-- present!
+nest <-- present!
 
 
 
