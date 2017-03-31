@@ -1,38 +1,61 @@
 http://mindscape.io
 
+Each user builds a hierarchy of nodes (each node is a post),
+wired together from generic to special in a radially expanding graph;
+a mandala that functions as a satellite dish that catches signals from other people;
+overlay your dish with other people's dishes and wire cycles between identical nodes
+to form one big dish/mandala.
+The service provides coordinating nodes, representing 4D of space-time to seed the integration of personal hierarchies.
+A model of the Internet.
+
+We just picked up dish.catering and mandala.express
+and we're working up the capital to get dish.co 
+and I might hit up the people at mandala.io 
+
 (msio
   (reactjs redux nodejs neo4j)
   
-  (node (t x y z author_id val id)
-    post (id val author_id (init t x y z)(edit ()()()())(commit ()()()())(shroud ()()()())))
-  (wire (t x y z author_id parent_id child_id id)
-    post (id child_id parent_id author_id (init t x y z)(edit ()()()())(commit ()()()())(shroud ()()()()))
-    render ((get_node parent_id)-->(get_node child_id))
-    assert ((get_node child_id) has at least one parent wire))
-  (nest (t x y z author_id container_id child_id id)
-    post (id child_id container_id author_id (init t x y z)(edit ()()()())(commit ()()()())(shroud ()()()()))
-    render (get_node container_id (get_node child_id))
-    assert ((get_node child_id) has only one container nest))
+  (node (node_id user_id val init_time shroud_time edit_time commit_time)
+    post (node_id user_id val init_time shroud_time edit_time commit_time))
     
-  (register (t x y z author_id wire_id view_id nest_id)
-    (node (t x y z author_id () author_id))
-    (node (t x y z author_id () view_id))
-    (wire (t x y z author_id author_id view_id wire_id))
-    (nest (t x y z author_id author_id view_id nest_id)))
+  (wire (
+    wire_id user_id 
+    parent_id parent_index
+    child_id child_index (position dish x y) (display dish force)
+    copy_ids
+    init_time shroud_time select_time test_time)
+  ) post (
+    wire_id user_id 
+    child_id child_index (position dish x y ) (dispay dish force)
+    parent_id parent_index
+    copy_ids
+    init_time shroud_time select_time test_time
+  ))
     
-  (add_node (t x y z author_id parent_id wire_id child_id nest_id)
-    (node (t x y z author_id () child_id))
-    (wire (t x y z author_id parent_id child_id wire_id))
-    (nest (t x y z author_id parent_id child_id nest_id)))
-  (edit_node (t x y z author_id node_id val)
-    (cond (not get_commit get_node id)
-      post (id val author_id (get_init get_node id)(edit t x y z)(commit ()()()())(shroud ()()()()) ))
-  (commit_node (t x y z author_id id)
+  (register (init_time user_id root_id wire_id)
+    (node (user_id user_id () init_time () () ()))
+    (node (root_id user_id () init_time () () ()))
+    (wire (
+      wire_id user_id
+      user_id 0
+      root_id 0 (position () 0 0) (display t ())
+      ()
+      init_time () () ()
+    )))
     
-    post (id (get_val get_node id) author_id (
-  shroud_node ((node Author) t x y z A))
-    store (A Author (commited t x y z))
-
+  (expand (init_time user_id parent_id child_id wire_id)
+    (node (child_id user_id () init_time () () ()))
+    (wire (wire_id 
+      
+  (edit (shroud_time commit_time edit_time init_time val user_id node_id)
+    (cond (eq shroud_time ())
+      (cond (eq commit_time ())
+        node (() () edit_time init_time val user_id node_id))))
+     
+  (commit (shroud_time commit_time edit_time init_time val user_id node_id)
+    (cond (eq shroud_time ())
+      node (() commit_time edit_time init_time val user_id node_id)))
+      
   move_node
     delete prev nest
     store next nest
@@ -45,7 +68,7 @@ from the old model:
 wire <-- define!
 nest <-- present!
 
-
+sync user_wire with owner_wire
 
 
 
