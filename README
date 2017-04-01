@@ -33,18 +33,22 @@ and I might hit up the people at mandala.io
 These different vectors to be used as parameters 
 
 (msio
-  (reactjs redux nodejs neo4j)
+  ((nodejs neo4j) (reactjs redux))
   
   (node (
     ord_id
     init_vector mask_vector commit_vector edit_vector
     node_id user_id
-    val) 
+    value) 
     post (
       ord_id
       init_vector mask_vector commit_vector edit_vector
       node_id user_id
-      val))
+      value))
+      
+  (a vector, e.g. (t x y z), e.g. (timestamp, longitude, latitude, altitude))
+  (a node will have one or more parent nodes (imagine a tree-like graph that expands outwards like a circle))
+  (a wire links a parent to a child)
     
   (wire (
     ord_id
@@ -59,23 +63,26 @@ These different vectors to be used as parameters
     child_parent_count
     child_parent_index 
     child_enlist_child
-    copy_ids
-    sync_ids)
+    viewer_ids)
     post (
       ord_id
       init_vector select_vector shroud_vector edit_vector
-      wire_id user_id 
+      cause_id wire_id user_id
       parent_id
-      parent_child_count
       parent_child_index 
-      parent_enlist_child
+      parent_nest_child
+      parent_list_child
       render_vector
       chid_id
-      child_parent_count
       child_parent_index
-      child_enlist_child
-      copy_ids
-      sync_ids))
+      child_nest_child
+      child_list_child))
+  
+  (cond (eq () (eq () cause_id)) for some wire, any change made to (wire cause_id) will be echoed in that wire
+    (this is used to animate changes another user makes to reposition their node, etc))
+  (parent can force child to nest)
+  (given nest, parent can force child to list)
+  (optional function for nest in parent, auto de-nest other parents; call it move)
     
   (register (init_time user_id root_id wire_id)
     (node (user_id user_id () init_time () () ()))
