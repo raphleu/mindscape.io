@@ -1,8 +1,26 @@
 http://mindscape.io
 
-Each user builds a hierarchy of nodes (each node is a post),
-wired together from generic to special in a radially expanding graph;
-a mandala that functions as a satellite dish that catches signals from other people;
+Each user builds a hierarchy of nodes
+  (each node is a post),
+linked together in a radially expanding graph
+  (each link is an arrow).
+
+The links can go between a sequence of nodes, e.g. in a presentation or a train of thought
+In our interface they are displayed in the order of searching or recognizing or rendering or enumerating; 
+  we often display information in a tree shape that
+    is intuitively visualizable, with material behavior,
+    allows for sorting (e.g. in a binary search tree
+    
+  
+    taxonomic trees in biology,
+    linguistic tree of root words to prefixes/suffixes 
+    linguistic tree of Chinese radical/root to phonetic symbols,
+    genes? with crossing over? 
+    nested folder (directory-subdirectory) tree shaped file system on popular personal computers,
+
+    and hierarchical outline structures,
+    
+
 overlay your dish with other people's dishes and wire cycles between identical nodes
 to form one big dish/mandala.
 The service provides coordinating nodes, representing 4D of space-time to seed the integration of personal hierarchies.
@@ -12,25 +30,52 @@ We just picked up dish.catering and mandala.express
 and we're working up the capital to get dish.co 
 and I might hit up the people at mandala.io 
 
+These different vectors to be used as parameters 
+
 (msio
   (reactjs redux nodejs neo4j)
   
-  (node (node_id user_id val init_time shroud_time edit_time commit_time)
-    post (node_id user_id val init_time shroud_time edit_time commit_time))
+  (node (
+    ord_id
+    init_vector mask_vector commit_vector edit_vector
+    node_id user_id
+    val) 
+    post (
+      ord_id
+      init_vector mask_vector commit_vector edit_vector
+      node_id user_id
+      val))
     
   (wire (
+    ord_id
+    init_vector select_vector mask_vector edit_vector
     wire_id user_id 
-    parent_id parent_index
-    child_id child_index (position dish x y) (display dish force)
+    parent_id
+    parent_child_count
+    parent_child_index 
+    parent_enlist_child
+    render_vector
+    child_id 
+    child_parent_count
+    child_parent_index 
+    child_enlist_child
     copy_ids
-    init_time shroud_time select_time test_time)
-  ) post (
-    wire_id user_id 
-    child_id child_index (position dish x y ) (dispay dish force)
-    parent_id parent_index
-    copy_ids
-    init_time shroud_time select_time test_time
-  ))
+    sync_ids)
+    post (
+      ord_id
+      init_vector select_vector shroud_vector edit_vector
+      wire_id user_id 
+      parent_id
+      parent_child_count
+      parent_child_index 
+      parent_enlist_child
+      render_vector
+      chid_id
+      child_parent_count
+      child_parent_index
+      child_enlist_child
+      copy_ids
+      sync_ids))
     
   (register (init_time user_id root_id wire_id)
     (node (user_id user_id () init_time () () ()))
