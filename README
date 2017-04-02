@@ -3,9 +3,10 @@ http://mindscape.io
 Each user builds a hierarchy of nodes
   (each node is a post),
 linked together in a radially expanding graph
-  (each link is an arrow).
+  (each link is an arrow between nodes).
+Nodes 
 
-The links can go between a sequence of nodes, e.g. in a presentation or a train of thought
+Each link can go between a sequence of nodes, e.g. in a presentation or a train of thought
 In our interface they are displayed in the order of searching or recognizing or rendering or enumerating; 
   we often display information in a tree shape that
     is intuitively visualizable, with material behavior,
@@ -36,47 +37,66 @@ These different vectors to be used as parameters
   ((nodejs neo4j) (reactjs redux))
   
   (node (
-    ord_id
-    init_vector mask_vector commit_vector edit_vector
-    node_id user_id
+    coordinator_node_id
+    init_vector hide_vector commit_vector edit_vector
+    node_id user_node_id
     value) 
     post (
-      ord_id
-      init_vector mask_vector commit_vector edit_vector
-      node_id user_id
+      coordinator_node_id
+      init_vector hide_vector commit_vector edit_vector
+      node_id user_node_id
       value))
-      
-  (a vector, e.g. (t x y z), e.g. (timestamp, longitude, latitude, altitude))
-  (a node will have one or more parent nodes (imagine a tree-like graph that expands outwards like a circle))
-  (a wire links a parent to a child)
-    
-  (wire (
-    ord_id
-    init_vector select_vector mask_vector edit_vector
-    wire_id user_id 
-    parent_id
-    parent_child_count
-    parent_child_index 
-    parent_enlist_child
-    render_vector
-    child_id 
-    child_parent_count
-    child_parent_index 
-    child_enlist_child
-    viewer_ids)
+  
+  (each action flag (e.g. init, hide, commit, edit) is () or a vector
+    (e.g. (t x y z), e.g. (timestamp, longitude, latitude, altitude))
+    that indicates the position at which the flag was set.)
+  (coordinator_node indicates the coordinate system used in the vectors)
+  (each node has a present to it; except for a user_node, which is the root of the present tree)
+
+  (present (
+    coordinator_node_id
+    init_vector select_vector hide_vector edit_vector
+    present_id user_node_id 
+    start_node_id
+    start_out_index
+    present_listed
+    present_vector
+    end_node_id
+    end_in_index
+    end_render_children
+    end_list_children
+    source_present_id)
     post (
-      ord_id
-      init_vector select_vector shroud_vector edit_vector
-      cause_id wire_id user_id
-      parent_id
-      parent_child_index 
-      parent_nest_child
-      parent_list_child
-      render_vector
-      chid_id
-      child_parent_index
-      child_nest_child
-      child_list_child))
+      coordinator_node_id
+      init_vector select_vector hide_vector edit_vector
+      present_id user_node_id
+      start_node_id
+      start_out_index
+      present_listed
+      present_vector
+      end_node_id
+      end_in_index
+      end_render_children
+      end_list_children
+      source_present_id))
+     
+  (define (
+    coordinator_node_id
+    init_vector select_vector hide_vector edit_vector
+    define_id user_node_id
+    start_node_id
+    start_out_index
+    end_node_id
+    end_in_index)
+    post (
+      coordinator_node_id
+      init_vector select_vector hide_vector edit_vector
+      define_id user_node_id
+      start_node_id
+      start_out_index
+      end_node_id
+      end_in_index))
+    
   
   (cond (eq () (eq () cause_id)) for some wire, any change made to (wire cause_id) will be echoed in that wire
     (this is used to animate changes another user makes to reposition their node, etc))
