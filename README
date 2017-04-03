@@ -1,41 +1,12 @@
 http://mindscape.io
+soon, also at http://dish.catering
 
-Each user builds a hierarchy of nodes
-  (each node is a post),
-linked together in a radially expanding graph
-  (each link is an arrow between nodes).
-Nodes 
-
-Each link can go between a sequence of nodes, e.g. in a presentation or a train of thought
-In our interface they are displayed in the order of searching or recognizing or rendering or enumerating; 
-  we often display information in a tree shape that
-    is intuitively visualizable, with material behavior,
-    allows for sorting (e.g. in a binary search tree
-    
-  
-    taxonomic trees in biology,
-    linguistic tree of root words to prefixes/suffixes 
-    linguistic tree of Chinese radical/root to phonetic symbols,
-    genes? with crossing over? 
-    nested folder (directory-subdirectory) tree shaped file system on popular personal computers,
-
-    and hierarchical outline structures,
-    
-
-overlay your dish with other people's dishes and wire cycles between identical nodes
-to form one big dish/mandala.
-The service provides coordinating nodes, representing 4D of space-time to seed the integration of personal hierarchies.
-A model of the Internet.
-
-We just picked up dish.catering and mandala.express
-and we're working up the capital to get dish.co 
-and I might hit up the people at mandala.io 
-
-These different vectors to be used as parameters 
+build a hierarchy of notes in the shape of a satellite dish to represent yourself and catch signals!
 
 (msio
   ((nodejs neo4j) (reactjs redux))
   
+  (A user posts by creating a (node))
   (node (
     coordinator_node_id
     init_vector hide_vector commit_vector edit_vector
@@ -46,25 +17,26 @@ These different vectors to be used as parameters
       init_vector hide_vector commit_vector edit_vector
       node_id user_node_id
       value))
+  (The coordinator_node indicates the reference frame)
+  (a flag (e.g. init_vector) is
+    unset to () or
+    set to a vector (e.g. (t x y z), e.g. (timestamp, longitude, latitude, altitude)) consistent with the coordinator_node)
   
-  (each action flag (e.g. init, hide, commit, edit) is () or a vector
-    (e.g. (t x y z), e.g. (timestamp, longitude, latitude, altitude))
-    that indicates the position at which the flag was set.)
-  (coordinator_node indicates the coordinate system used in the vectors)
-  (each node has a present to it; except for a user_node, which is the root of the present tree)
-
+  (model (each user_node is the root (source) of a tree that connects all nodes in the user's view;
+    this tree is the render tree, i.e. a search tree))
+  (view (present_links are visualized as the nesting of the target in the source))
   (present (
     coordinator_node_id
     init_vector select_vector hide_vector edit_vector
     present_id user_node_id 
     start_node_id
     start_out_index
-    present_listed
-    present_vector
+    listed
+    vector
     end_node_id
     end_in_index
-    end_render_children
-    end_list_children
+    end_leafed
+    end_listed
     source_present_id)
     post (
       coordinator_node_id
@@ -72,14 +44,15 @@ These different vectors to be used as parameters
       present_id user_node_id
       start_node_id
       start_out_index
-      present_listed
-      present_vector
+      listed
+      vector
       end_node_id
       end_in_index
-      end_render_children
-      end_list_children
+      end_leafed
+      end_listed
       source_present_id))
-     
+  
+  (each node has a define_link out of it; except
   (define (
     coordinator_node_id
     init_vector select_vector hide_vector edit_vector
@@ -202,7 +175,7 @@ generally,
 
 **Nested lists are ordered trees!
 
-A user posts by creating (node) in some other (node) e.g. (mandala) or (mandala (journal (Mar 25 2017)))
+
 
 
 He links related Nodes with arrows,
