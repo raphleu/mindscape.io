@@ -1,13 +1,14 @@
 http://mindscape.io
 soon, also at http://dish.catering
 
-build a hierarchy of notes in the shape of a satellite dish to represent yourself and catch signals!
+Build a hierarchy of notes in the shape of a satellite dish to represent yourself and catch signals!
+  Render it as a web of nodes and arrows where you can collapse a sections of the web into individual nodes.
+Overlay hiearchies and link similar and opposing notes across individual hierarchies!
 
-(msio
+(mindscape.io
   ((nodejs neo4j) (reactjs redux))
   
-  (A user posts by creating a (node))
-  (node (
+  (Node (
     coordinator_node_id
     init_vector hide_vector commit_vector edit_vector
     node_id user_node_id
@@ -17,26 +18,26 @@ build a hierarchy of notes in the shape of a satellite dish to represent yoursel
       init_vector hide_vector commit_vector edit_vector
       node_id user_node_id
       value))
+      
+  (A user posts by creating a Node)
   (The coordinator_node indicates the reference frame)
   (a flag (e.g. init_vector) is
     unset to () or
     set to a vector (e.g. (t x y z), e.g. (timestamp, longitude, latitude, altitude)) consistent with the coordinator_node)
-  
-  (model (each user_node is the root (source) of a tree that connects all nodes in the user's view;
-    this tree is the render tree, i.e. a search tree))
-  (view (present_links are visualized as the nesting of the target in the source))
-  (present (
+  (post stores nodes and relationships to the neo4j database)
+ 
+  (Present (
     coordinator_node_id
     init_vector select_vector hide_vector edit_vector
     present_id user_node_id 
-    start_node_id
+    start_node_id 
     start_out_index
     listed
     vector
     end_node_id
     end_in_index
-    end_leafed
-    end_listed
+    end_as_leaf
+    end_as_list
     source_present_id)
     post (
       coordinator_node_id
@@ -48,12 +49,24 @@ build a hierarchy of notes in the shape of a satellite dish to represent yoursel
       vector
       end_node_id
       end_in_index
-      end_leafed
-      end_listed
+      end_as_leaf
+      end_as_list
       source_present_id))
   
-  (each node has a define_link out of it; except
-  (define (
+  (model (each user_node is the source (root) of a directed tree (Nodes, Presents) that connects all nodes in the user's view;
+    this tree is the user's presentation tree;
+    it is essentially a search/recognition tree, render/enumeration tree))
+  (view (each Present is visualized as the nesting of its end-Node in its start-Node))
+  (start_out_index indicates the index of this Present relative to the other Presents starting from start-Node)
+  (listed is unset to () or set to t when the end-Node should be presented in the list of the start-Node)
+  (vector the position (e.g. (t x y z)) of the end-Node relative to the-start Node, given that the end-Node is not listed)
+  (end_as_leaf is set to t when the end-Node should not present any of its Present-children)
+  (end_as_list is set to t when the end-Node should force all its children to be listed
+    this overrides the 'listed' property on those Presents)
+  (source_present_id is unset to () or set to the id of the Present that this Present copies,
+    to animate movements of a Node made by another user)
+
+  (Define (
     coordinator_node_id
     init_vector select_vector hide_vector edit_vector
     define_id user_node_id
@@ -69,15 +82,14 @@ build a hierarchy of notes in the shape of a satellite dish to represent yoursel
       start_out_index
       end_node_id
       end_in_index))
-    
+   
+  (model (each user_node is the sink of a directed graph (Nodes, Defines) that connects all the Nodes acknowledged by the user
+    (this includes all Nodes and Defines created by the user; the user can Define between Nodes he did not create))
+  (view (each Define is visualized as an arrow from its start-Node to its end-Node)
+    (if a Node is leafed, the arrows to/from its children go to it instead)
   
-  (cond (eq () (eq () cause_id)) for some wire, any change made to (wire cause_id) will be echoed in that wire
-    (this is used to animate changes another user makes to reposition their node, etc))
-  (parent can force child to nest)
-  (given nest, parent can force child to list)
-  (optional function for nest in parent, auto de-nest other parents; call it move)
-    
-  (register (init_time user_id root_id wire_id)
+  
+  (register (init_vector user_id present_id define_id root_id )
     (node (user_id user_id () init_time () () ()))
     (node (root_id user_id () init_time () () ()))
     (wire (
