@@ -12,12 +12,7 @@ Overlay hiearchies and link similar and opposing notes across individual hierarc
     coordinator_node_id
     init_vector hide_vector commit_vector edit_vector
     node_id user_node_id
-    value) 
-    post (
-      coordinator_node_id
-      init_vector hide_vector commit_vector edit_vector
-      node_id user_node_id
-      value))
+    value))
       
   (A user posts by creating a Node)
   (The coordinator_node indicates the reference frame)
@@ -28,7 +23,7 @@ Overlay hiearchies and link similar and opposing notes across individual hierarc
  
   (Present (
     coordinator_node_id
-    init_vector select_vector hide_vector edit_vector
+    init_vector hide_vector select_vector edit_vector
     present_id user_node_id 
     start_node_id 
     start_out_index
@@ -38,20 +33,7 @@ Overlay hiearchies and link similar and opposing notes across individual hierarc
     end_in_index
     end_as_leaf
     end_as_list
-    source_present_id)
-    post (
-      coordinator_node_id
-      init_vector select_vector hide_vector edit_vector
-      present_id user_node_id
-      start_node_id
-      start_out_index
-      listed
-      vector
-      end_node_id
-      end_in_index
-      end_as_leaf
-      end_as_list
-      source_present_id))
+    source_present_id))
   
   (model (each user_node is the source (root) of a directed tree (Nodes, Presents) that connects all nodes in the user's view;
     this tree is the user's presentation tree;
@@ -68,20 +50,12 @@ Overlay hiearchies and link similar and opposing notes across individual hierarc
 
   (Define (
     coordinator_node_id
-    init_vector select_vector hide_vector edit_vector
+    init_vector hide_vector select_vector edit_vector
     define_id user_node_id
     start_node_id
     start_out_index
     end_node_id
-    end_in_index)
-    post (
-      coordinator_node_id
-      init_vector select_vector hide_vector edit_vector
-      define_id user_node_id
-      start_node_id
-      start_out_index
-      end_node_id
-      end_in_index))
+    end_in_index))
    
   (model (each user_node is the sink of a directed graph (Nodes, Defines) that connects all the Nodes acknowledged by the user
     (this includes all Nodes and Defines created by the user; the user can Define between Nodes he did not create))
@@ -89,45 +63,89 @@ Overlay hiearchies and link similar and opposing notes across individual hierarc
     (if a Node is leafed, the arrows to/from its children go to it instead)
   
   
-  (register (init_vector user_id present_id define_id root_id )
-    (node (user_id user_id () init_time () () ()))
-    (node (root_id user_id () init_time () () ()))
-    (wire (
-      wire_id user_id
-      user_id 0
-      root_id 0 (position () 0 0) (display t ())
+  (register (
+    coordinator_id 
+    user_vector 
+    user_id 
+    present_id
+    define_id 
+    root_id)
+    (Node (
+      coordinator_id
+      user_vector () () ()
+      user_id user_id
+      ()))
+    (Node (
+      coordinator_id
+      user_vector () () ()
+      root_id user_id 
+      ()))
+    (Present (
+      coordinator_id
+      user_vector () () ()
+      present_id user_id
+      user_id
+      0
+      t
+      (0 0 0 0)
+      root_id 
+      0
       ()
-      init_time () () ()
-    )))
+      ()
+      ()))
+    (Define (
+      coordinator_id
+      user_vector () () ()
+      define_id user_id
+      root_id
+      0
+      user_id
+      0)))
     
-  (expand (init_time user_id parent_id child_id wire_id)
-    (node (child_id user_id () init_time () () ()))
-    (wire (wire_id 
+  (expand (
+    coordinator_id
+    user_vector
+    parent_id
+    present_id
+    present_out_index
+    define_id
+    define_in_index
+    child_id
+    user_id)
+    (Node (
+      coordinator_id
+      user_vector () () ()
+      child_id user_id
+      ()))
+    (Present (
+      coordinator_id
+      user_vector () () ()
+      present_id user_id
+      parent_id
+      present_out_index
+      t
+      (0 0 0 0)
+      child_id
+      0
+      ()
+      ()
+      ()))
+    (Define (
+      coordinator_id
+      user_vector () () ()
+      define_id user_id
+      parent_id
+      define_in_index
+      child_id
+      0)))
       
-  (edit (shroud_time commit_time edit_time init_time val user_id node_id)
-    (cond (eq shroud_time ())
-      (cond (eq commit_time ())
-        node (() () edit_time init_time val user_id node_id))))
-     
-  (commit (shroud_time commit_time edit_time init_time val user_id node_id)
-    (cond (eq shroud_time ())
-      node (() commit_time edit_time init_time val user_id node_id)))
-      
-  move_node
-    delete prev nest
-    store next nest
-  
+  ...
 ) 
 
-wire, nest are verbs!
-
-from the old model:
-wire <-- define!
-nest <-- present!
-
-sync user_wire with owner_wire
-
-
+define and present are a little abstract, meant to describe processes of consciousness.
+to make it more concrete, we can imagine:
+wire <-- define
+nest <-- present
 
 Visualization
   (A <-- B) is similar to (A (B))
