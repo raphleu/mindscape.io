@@ -2,3 +2,21 @@ body {
   margin: 0px;
   font-family: monospace;
 }
+
+.item {
+  margin: 2px
+  border: 1px solid lavender;
+  padding: 2px;
+}
+
+.button {
+  margin: 2px;
+  cursor: pointer;
+}
+
+.content {
+  border: 1px solid azure;
+  padding: 2px;
+  background-color: white;
+}
+

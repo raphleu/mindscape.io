@@ -4,9 +4,9 @@ const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const path = require('path');
 
-const session = require('express-session');
 const uuid = require('uuid/v4');
-const redisStore = require('connect-redis')(session);
+const session = require('express-session');
+const RedisStore = require('connect-redis')(session);
 
 const graphenedb_config = {
   host: process.env.GRAPHENEDB_BOLT_URL,
@@ -18,7 +18,7 @@ const my_graphenedb_config = {
   host: 'bolt://hobby-giphgfjnbmnagbkepekepdnl.dbs.graphenedb.com:24786',
   user: 'app56614688-dYRNeO',
   pass: '6pQjlv4oiV5HXJBrqZp8',
-}; // TODO: don't post this publicly, someone might mess with it-- but really no one cares right now, you don't even have any users man, so whatever-- but really, don't post it lol, maybe someone will look at your old commits and hack youuuuu; ok, i'll remember.
+}; // TODO: don't post this publicly, someone might mess with it-- but really no one cares right now, you don't even have any users man, so whatever-- but really, don't post it lol, maybe someone will look at your old commits and hack youuuuu; ok, i'll remember...
 
 const local_neo4j_config = {
   host: 'http://localhost:7474',
@@ -32,18 +32,22 @@ const server = express();
 
 server.set('port', (process.env.PORT || 3000));
 
-server.use(morgan('dev'));
-
-server.use(bodyParser.json());
+server.use(morgan('dev')); // logger
 
 server.use(bodyParser.urlencoded({extended: true}));
+server.use(bodyParser.json());
 
 server.use(express.static(path.join(__dirname, 'dist'))); 
 
 
+const store_options = {
+  logErrors: true,
+  url: 'redis://h:pa0daabadd50ba3515435a534d06c31d3533a8c7647db7d06dea4a2e73733b200@ec2-34-204-242-91.compute-1.amazonaws.com:14209'
+};
+
 const session_options = {
   cookie: {
-    maxAge: 172800000,
+    maxAge: 1000 * 60 * 60 * 24 * 2,
     //secure: true,
   },
   genid: (req) => {
@@ -53,142 +57,89 @@ const session_options = {
   rolling: true,
   saveUninitialized: true,
   secret: 'keyboard canoli',
-  //store: new redisStore(store_options),
+  store: new RedisStore(store_options),
   //unset: 'destory',
 }
-
 if (server.get('env') === 'production') {
   server.set('trust proxy', 1) // trust first proxy
   session_options.cookie.secure = true // serve secure cookies
 }
-
 server.use(session(session_options));
 
-server.post('/api/init', (req, res) => {
-  new Promise((resolve, reject) => {
-      if (req.session.user_id === req.body.user_id) {
-        resolve(req.session.user_id);
-      }
-      else {
-        reject('invalid user_id');
-      }
-    })
-    .then(user_id => {
-      return services.getPresence(user_id);
-    })
-    .then(state => {
-      res.status(200).json({data: state});
+function respond(callback) {
+  return (req, res) => {
+    return Promise.resolve(callback(req, res))
+    .then(data => {
+      res.status(200).json({data});
     })
     .catch(err => {
       console.error(err);
-      res.status(500).json({data: err.message});
+      res.status(500).json({data: err});
     });
-});
+  };
+}
 
-server.post('/api/register', (req, res) => {
-  const { t, x, y, z } = req.body;
+server.post('/api/resume', respond((req, res) => {
+  const { user_id } = req.session;
+  const { vect } = req.body;
+  console.log('resume');
+  return services.getPresentation({vect, user_id});
+}));
 
-  services.getNewAuthor({t, x, y, z})
-    .then(({user_id}) => {
-      // TODO use prev user_id for logout action?
+server.post('/api/register', respond((req, res) => {
+  const { user_id } = req.session;
+  const { vect } = req.body;
+  console.log('register');
+  return services.logoutUser({vect, user_id}).then(() => {
+    return services.getNewUser({vect}).then(({ user_id }) => {
       req.session.user_id = user_id;
-      resolve(req.session.user_id);
-    })
-    .then(user_id => {
-      return services.getPresence(user_id);
-    })
-    .then(state => {
-      res.status(200).json({data: state});
-    })
-    .catch(err => {
-      console.error(err);
-      res.status(500).json({data: err.message});
+      return services.getPresentation({vect, user_id});
     });
-});
+  });
+}));
 
-server.post('/api/login', (req, res) => {
-  new Promise((resolve, reject) => {
-      if (req.session.user_id === req.body.user_id) {
-        resolve(req.session.user_id);
-      }
-      else {
-        reject('invalid user_id');
-      }
-    })
-    .then(logout_user_id => {
-      // TODO user prev_user_id for logout action?
-      const {name, pass} = req.body;
-
-      return Promise.resolve(services.getAuthorId({name, pass}))
-        .catch(error => {
-          res.status(400).json({data: error.message});
-        });
-    })
-    .then(({user_id}) => {
+server.post('/api/login', respond((req, res) => {
+  const { user_id } = req.session;
+  const { vect, name, pass } = req.body;
+  console.log('login');
+  return services.logoutUser({vect, user_id}).then(() => {
+    return services.getUserId({vect, name, pass}).then(({ user_id }) => {
       if (user_id) {
-        services.getPresence(user_id)
-          .then(state => {
-            res.status(200).json({data: state});
-          });
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      res.status(500).json({data: err.message});
-    })
-});
-
-server.post('/api/logout', (req, res) => {
-  new Promise((resolve, reject) => {
-      if (req.session.user_id === req.body.user_id) {
-        resolve(req.session.user_id);
+        req.session.user_id = user_id;
+        return services.getPresentation({vect, user_id})
       }
       else {
-        reject('invalid user_id');
+        return {}; // login failed
       }
-    })
-    .then(logout_user_id => {
-      // TODO user prev_user_id for logout action?
-      const {t, x, y, z} = req.body;
-
-      return services.getNewAuthor({t, x, y, z})
-        .then(({user_id}) => {
-          req.session.user_id = user_id;
-          return req.session.user_id;
-        });
-    })
-    .then(user_id => {
-      return services.getPresence(user_id);
-    })
-    .then(state => {
-      res.status(200).json({data: state});
-    })
-    .catch(err => {
-      console.error(err);
-      res.status(500).json({data: err.message});
     });
-});
+  });
+}));
 
-server.post('/api/graph', (req, res) => {
-  new Promise((resolve, reject) => {
-      if (req.session.user_id === req.body.user_id) {
-        resolve(req.body);
-      }
-      else {
-        reject('invalid user_id');
-      }
-    })
-    .then(({user_id, post_by_id, link_by_id}) => {
-      return services.setGraph({user_id, post_by_id, link_by_id});
-    })
-    .then(state => {
-      res.status(200).json({data: state});
-    })
-    .catch(err => {
-      console.error(err);
-      res.status(500).json({data: err.message});
-    });
-});
+server.post('/api/logout', respond((req, res) => {
+  const { user_id } = req.session;
+  const { vect } = req.body;
+  console.log('logout');
+  return services.logoutUser({vect, user_id});
+}));
+
+server.post('/api/pass', respond((req, res) => {
+  const { user_id } = req.session;
+  const { vect, pass, edit_pass } = req.body;
+  console.log('pass');
+
+  return services.editUserPass({vect, user_id, pass, edit_pass});
+}));
+
+server.post('/api/graph', respond((req, res) => {
+  const { user_id } = req.session;
+  const { node_by_id, link_by_id } = req.body;
+  console.log('graph');
+  return services.setGraph({
+    user_id,
+    node_by_id,
+    link_by_id,
+  });
+}));
 
 server.listen(server.get('port'), () => {
   console.log('Server started: http://localhost:' + server.get('port') + '/');

@@ -1,6 +1,8 @@
 const { resolve } = require('path');
 const webpack = require('webpack');
 
+//TODO add .babel.js extension to use es6 here
+
 module.exports = {
   entry: [
     /*

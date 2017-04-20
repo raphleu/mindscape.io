@@ -1,119 +1,77 @@
 module.exports = (function() {
+  const DragTypes = {
+    Note: 'Note',
+  };
+
   const NodeLabels = {
-    Note: 'Note', // all mindscape nodes are :Notes
+    Node: 'Node', // all mindscape nodes are :Nodes
     //
-    Author: 'Author',
-    Coordinator: 'Coordinator',
+    User: 'User',
+    Coord: 'Coord',
+    //
     T: 'T',
     X: 'X',
     Y: 'Y',
     Z: 'Z',
   };
+
   const LinkTypes = {
-    DEFINE: 'DEFINE', // represent definition or determination
-    PRESENT: 'PRESENT', // represents framing
-  };
-
-
-  const NotePositions = {
-    STATIC: 'static',
-    ABSOLUTE: 'absolute',
-  };
-  const NoteDisplays = {
-    POINT: 'POINT',
-    HEAD: 'HEAD',
-    BODY: 'BODY',
-  };
-  const NoteBodies = {
-    LIST: 'LIST',
-    PLANE: 'PLANE',
+    DEFINE: 'DEFINE',
+    PRESENT: 'PRESENT',
   };
 
   const Defaults = {
-    Note: {
-      labels: [NodeLabels.Note],
+    Node: {
+      labels: [NodeLabels.Node],
       properties: {
-        id: 0,
-        author_id: 0,
-        value: '',
-        create_t: 0,
-        create_x: 0,
-        create_y: 0,
-        create_z: 0,
-        modify_t: 0,
-        modify_x: 0,
-        modify_y: 0,
-        modify_z: 0,
-        commit_t: 0,
-        commit_x: 0,
-        commit_y: 0,
-        commit_z: 0,
-        delete_t: 0,
-        delete_x: 0,
-        delete_y: 0,
-        delete_z: 0,
+        init_vect: [0, 0, 0, 0],
+        hide_vect: [],
+        commit_vect: [],
+        edit_vect: [],
+        id: '',
+        user_id: '',
+        index: null, //the index of the vect for which this node's string is a value
+        string: '',
       },
     },
     DEFINE: {
       type: LinkTypes.DEFINE,
       properties: {
-        id: 0,
-        end_id: 0,
-        start_id: 0,
-        author_id: 0,
-        in_index: 0,
+        init_vect: [],
+        hide_vect: [],
+        select_vect: [],
+        edit_vect: [],
+        id: '',
+        start_id: '',
         out_index: 0,
-        create_t: 0,
-        create_x: 0,
-        create_y: 0,
-        create_z: 0,
-        modify_t: 0,
-        modify_x: 0,
-        modify_y: 0,
-        modify_z: 0,
-        delete_t: 0,
-        delete_x: 0,
-        delete_y: 0,
-        delete_z: 0,
+        end_id: '',
+        in_index: 0,
       }
     },
     PRESENT: {
       type: LinkTypes.PRESENT,
       properties: {
-        id: 0,
-        start_id: 0,
-        end_id: 0,
-        author_id: 0,
+        init_vect: [0, 0, 0, 0],
+        hide_vect: [],
+        select_vect: [],
+        edit_vect: [],
+        id: '',
+        user_id: '',
+        start_id: '',
         out_index: 0,
+        list: true,
+        vect: [0, 0, 0, 0],
+        end_id: '',
         in_index: 0,
-        frame: 0,
-        current: 0,
-        position: NotePositions.STATIC,
-        x: 0,
-        y: 0,
-        display: NoteDisplays.BODY,
-        body: NoteBodies.LIST,
-        create_t: 0,
-        create_x: 0,
-        create_y: 0,
-        create_z: 0,
-        modify_t: 0,
-        modify_x: 0,
-        modify_y: 0,
-        modify_z: 0,
-        delete_t: 0,
-        delete_x: 0,
-        delete_y: 0,
-        delete_z: 0,
+        present_: false,
+        present_list: false,
       }
     }
   }
   return  {
+    DragTypes,
     NodeLabels,
     LinkTypes,
-    NotePositions,
-    NoteDisplays,
-    NoteBodies,
   };
 })();
 

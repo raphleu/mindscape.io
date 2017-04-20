@@ -1,43 +1,45 @@
 import {
-  INIT_FETCH,
-  REGISTER_FETCH,
-  LOGOUT_FETCH,
-  LOGIN_FETCH,
+  FETCH_RESUME,
   //
-  CREATE_NOTE_FETCH,
-  MODIFY_NOTE_FETCH,
-  COMMIT_NOTE_FETCH,
-  DELETE_NOTE_FETCH,
+  FETCH_REGISTER,
+  FETCH_LOGIN,
+  FETCH_LOGOUT,
+  FETCH_EDIT,
   //
-  MOVE_NOTE_FETCH,
+  FETCH_NODE_INIT,
+  FETCH_NODE_HIDE,
+  FETCH_NODE_COMMIT,
+  FETCH_NODE_EDIT,
   //
-  SET_CURRENT_FETCH,
-  SET_FRAME_FETCH,
+  MOVE_NODE_FETCH,
   //
-  FETCH_ACCEPT,
-  FETCH_REJECT,
+  FETCH_NODE_SELECT,
+  //
+  ACCEPT_FETCH,
+  REJECT_FETCH,
 } from './actions';
 
 import { routerReducer as routing } from 'react-router-redux';
 
 function fetching(state = false, action) {
   switch (action.type) {
-    case INIT_FETCH:
-    case REGISTER_FETCH:
-    case LOGOUT_FETCH:
-    case LOGIN_FETCH:
+    case FETCH_RESUME:
     //
-    case CREATE_NOTE_FETCH:
-    case DELETE_NOTE_FETCH:
-    case COMMIT_NOTE_FETCH:
+    case FETCH_REGISTER:
+    case FETCH_LOGIN:
+    case FETCH_LOGOUT:
+    case FETCH_EDIT:
     //
-    case MOVE_NOTE_FETCH:
+    case FETCH_NODE_INIT:
+    case FETCH_NODE_HIDE:
+    case FETCH_NODE_COMMIT:
+    case FETCH_NODE_EDIT:
     //
-    case SET_CURRENT_FETCH:
-    case SET_FRAME_FETCH:
+    case FETCH_NODE_SELECT:
+    case MOVE_NODE_FETCH:
       return true;
-    case FETCH_ACCEPT:
-    case FETCH_REJECT:
+    case ACCEPT_FETCH:
+    case REJECT_FETCH:
       return false;
     default:
       return state;
@@ -46,36 +48,36 @@ function fetching(state = false, action) {
 
 function user_id(state = '', action) {
   switch (action.type) {
-    case REGISTER_FETCH:
-    case LOGIN_FETCH:
-    case LOGOUT_FETCH:
+    case FETCH_REGISTER:
+    case FETCH_LOGIN:
+    case FETCH_LOGOUT:
       return '';
-    case FETCH_ACCEPT:
+    case ACCEPT_FETCH:
       return (action.payload.user_id != null) ? action.payload.user_id : state;
     default:
       return state;
   }
 }
 
-function note_by_id(state = {}, action) {
+function node_by_id(state = {}, action) {
   switch (action.type) {
-    case REGISTER_FETCH:
-    case LOGIN_FETCH:
-    case LOGOUT_FETCH:
+    case FETCH_REGISTER:
+    case FETCH_LOGIN:
+    case FETCH_LOGOUT:
       return {};
     //
-    case CREATE_NOTE_FETCH:
-    case DELETE_NOTE_FETCH:
-    case COMMIT_NOTE_FETCH:
+    case FETCH_NODE_INIT:
+    case FETCH_NODE_HIDE:
+    case FETCH_NODE_COMMIT:
+    case FETCH_NODE_EDIT:
     //
-    case MOVE_NOTE_FETCH:
-    case SET_CURRENT_FETCH:
-    case SET_FRAME_FETCH:
+    case MOVE_NODE_FETCH:
+    case FETCH_NODE_SELECT:
     //
-    case FETCH_ACCEPT:
-      return Object.keys(action.payload.note_by_id || {}).reduce((i_state, note_id) => {
-        return Object.assign({}, i_state, {
-          [note_id]: Object.assign({}, i_state[note_id], action.payload.note_by_id[note_id]),
+    case ACCEPT_FETCH:
+      return Object.keys(action.payload.node_by_id || {}).reduce((state, node_id) => {
+        return Object.assign({}, state, {
+          [node_id]: Object.assign({}, state[node_id], action.payload.node_by_id[node_id]),
         });
       }, state);
     default:
@@ -90,33 +92,30 @@ const empty_links = {
 };
 function links(state = empty_links, action) {
   switch (action.type) {
-    case REGISTER_FETCH:
-    case LOGIN_FETCH:
-    case LOGOUT_FETCH:
+    case FETCH_REGISTER:
+    case FETCH_LOGIN:
+    case FETCH_LOGOUT:
       return empty_links;
     //
-    case CREATE_NOTE_FETCH:
-    case DELETE_NOTE_FETCH:
-    case COMMIT_NOTE_FETCH:
+    case FETCH_NODE_INIT:
+    case FETCH_NODE_SELECT:
+    case MOVE_NODE_FETCH:
     //
-    case MOVE_NOTE_FETCH:
-    case SET_CURRENT_FETCH:
-    case SET_FRAME_FETCH:
-    //
-    case FETCH_ACCEPT:
-      return Object.keys(action.payload.link_by_id || {}).reduce((i_state, link_id) => {
-        const link = Object.assign({}, i_state.link_by_id[link_id], action.payload.link_by_id[link_id]);
+    case ACCEPT_FETCH:
+      return Object.keys(action.payload.link_by_id || {}).reduce((state, link_id) => {
+        console.log(state);
+        const link = Object.assign({}, state.link_by_id[link_id], action.payload.link_by_id[link_id]);
         return {
-          link_by_id: Object.assign({}, i_state.link_by_id, {
+          link_by_id: Object.assign({}, state.link_by_id, {
             [link_id]: link
           }),
-          link_by_id_by_start_id: Object.assign({}, i_state.link_by_id_by_start_id, {
-            [link.properties.start_id]: Object.assign({}, i_state.link_by_id_by_start_id[ link.properties.start_id ], {
+          link_by_id_by_start_id: Object.assign({}, state.link_by_id_by_start_id, {
+            [link.properties.start_id]: Object.assign({}, state.link_by_id_by_start_id[ link.properties.start_id ], {
               [link_id]: link,
             }),
           }),
           link_by_id_by_end_id: Object.assign({}, state.link_by_id_by_end_id, {
-            [link.properties.end_id]: Object.assign({}, i_state.link_by_id_by_end_id[ link.properties.end_id ], {
+            [link.properties.end_id]: Object.assign({}, state.link_by_id_by_end_id[ link.properties.end_id ], {
               [link_id]: link,
             }),
           }),
@@ -127,7 +126,8 @@ function links(state = empty_links, action) {
   }
 }
 
-export function rootReducer(state = {}, action) {
+export function rootReducer(state = empty_links, action) {
+  console.log('rootReducer', state);
   const { link_by_id, link_by_id_by_start_id, link_by_id_by_end_id } = links({
     link_by_id: state.link_by_id,
     link_by_id_by_start_id: state.link_by_id_by_start_id,
@@ -140,7 +140,7 @@ export function rootReducer(state = {}, action) {
     //
     user_id: user_id(state.user_id, action),
     //
-    note_by_id: note_by_id(state.note_by_id, action),
+    node_by_id: node_by_id(state.node_by_id, action),
     link_by_id,
     link_by_id_by_start_id,
     link_by_id_by_end_id,

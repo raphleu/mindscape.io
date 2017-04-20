@@ -1,4 +1,4 @@
-const { NodeLabels, RelationshipTypes, NotePositions, NoteDisplays, NoteBodies } = require('../src/types');
+const { NodeLabels, LinkTypes } = require('../src/types');
 const { authentication } = require('./authentication');
 
 const now = require('lodash').now;
@@ -6,308 +6,297 @@ const uuid = require('uuid/v4');
 
 const neo4j = require('neo4j-driver').v1;
 
-
 // neo4j graph database url
 module.exports = function({neo4j_driver_config}) {
   const { host, user, pass } = neo4j_driver_config;
   const neo4j_driver = neo4j.driver(host, neo4j.auth.basic(user, pass));
 
   return {
+    getPresentation,
     setGraph,
-    getNewAuthor,
-    getAuthorId,
-    getPresence,
+    getNewUser,
+    logoutUser,
+    editUser,
+    getUserId,
   };
 
-  function setGraph({user_id, note_by_id, link_by_id }) {
-    console.log('setGraph', user_id, note_by_id, link_by_id);
+
+  function queryGraph({ user_id, query, params }) {
     return new Promise((resolve, reject) => {
-      const params = {
-        user_id,
-        notes: Object.keys(note_by_id || {}).map(id => note_by_id[id]),
-        links: Object.keys(link_by_id || {}).map(id => link_by_id[id]),
-        c_id: uuid(),
-        t_id: uuid(),
-        x_id: uuid(),
-        y_id: uuid(),
-        z_id: uuid(),
-        d_tc_id: uuid(),
-        d_xc_id: uuid(),
-        d_yc_id: uuid(),
-        d_zc_id: uuid(),
-      };
-
-      // to commit a note, we need a note.commit object with 4 uuid, one for each coordinate definition
-      const query = `
-        UNWIND {notes} AS note
-        FOREACH (is_user_note IN CASE WHEN note.properties.author_id = {user_id} THEN [1] ELSE [] END|
-          MERGE (n:Note {id: note.properties.id})
-          SET
-            n.delete_t = note.properties.delete_t,
-            n.delete_x = note.properties.delete_x,
-            n.delete_y = note.properties.delete_y,
-            n.delete_z = note.properties.delete_z
-          FOREACH (n_is_not_committed IN CASE WHEN n.commit_t IS NULL THEN [1] ELSE [] END |
-            SET n += note.properties
-            FOREACH (n_is_author IN CASE WHEN n.id = n.author_id THEN [1] ELSE [] END |
-              SET n:Author
-            )
-            FOREACH (n_is_now_committed IN CASE WHEN n.commit_t IS NOT NULL THEN [1] ELSE [] END |
-              MERGE (c:Note:Author:Coordinator)
-                ON CREATE SET
-                  c.id = {c_id},
-                  c.author_id = {c_id},
-                  c.create_t = n.commit_t,
-                  c.create_x = n.commit_x,
-                  c.create_y = n.commit_y,
-                  c.create_z = n.commit_z
-              MERGE (c)<-[d_tc:DEFINE]-(t:Note:T {value: (86400000 * floor(n.commit_t / 86400000))})
-                ON CREATE SET
-                  t.id = {t_id},
-                  t.author_id = c.id,
-                  t.create_t = n.commit_t,
-                  t.create_x = n.commit_x,
-                  t.create_y = n.commit_y,
-                  t.create_z = n.commit_z,
-                  d_tc.id = {d_tc_id},
-                  d_tc.author_id = c.id,
-                  d_tc.create_t = n.commit_t,
-                  d_tc.create_x = n.commit_x,
-                  d_tc.create_y = n.commit_y,
-                  d_tc.create_z = n.commit_z
-              MERGE (c)<-[d_xc:DEFINE]-(x:Note:X {value: round(n.commit_x)})
-                ON CREATE SET
-                  x.id = {x_id},
-                  x.author_id = c.id,
-                  x.create_t = n.commit_t,
-                  x.create_x = n.commit_x,
-                  x.create_y = n.commit_y,
-                  x.create_z = n.commit_z,
-                  d_xc.id = {d_xc_id},
-                  d_xc.author_id = c.id,
-                  d_xc.create_t = n.commit_t,
-                  d_xc.create_x = n.commit_x,
-                  d_xc.create_y = n.commit_y,
-                  d_xc.create_z = n.commit_z
-              MERGE (c)<-[d_yc:DEFINE]-(y:Note:Y {value: round(n.commit_y)})
-                ON CREATE SET
-                  y.id = {y_id},
-                  y.author_id = c.id,
-                  y.create_t = n.commit_t,
-                  y.create_x = n.commit_x,
-                  y.create_y = n.commit_y,
-                  y.create_z = n.commit_z,
-                  d_yc.id = {d_yc_id},
-                  d_yc.author_id = c.id,
-                  d_yc.create_t = n.commit_t,
-                  d_yc.create_x = n.commit_x,
-                  d_yc.create_y = n.commit_y,
-                  d_yc.create_z = n.commit_z
-              MERGE (c)<-[d_zc:DEFINE]-(z:Note:Z {value: round(n.commit_z)})
-                ON CREATE SET
-                  z.id = {z_id},
-                  z.author_id = c.id,
-                  z.create_t = n.commit_t,
-                  z.create_x = n.commit_x,
-                  z.create_y = n.commit_y,
-                  z.create_z = n.commit_z,
-                  d_zc.id = {d_zc_id},
-                  d_zc.author_id = c.id,
-                  d_zc.create_t = n.commit_t,
-                  d_zc.create_x = n.commit_x,
-                  d_zc.create_y = n.commit_y,
-                  d_zc.create_z = n.commit_z
-              CREATE
-                (t)<-[d_nt:DEFINE]-(n),
-                (x)<-[d_nx:DEFINE]-(n),
-                (y)<-[d_ny:DEFINE]-(n),
-                (z)<-[d_nz:DEFINE]-(n)
-              SET
-                d_nt.id = note.d_nt_id,
-                d_nt.author_id = c.id,
-                d_nt.create_t = n.commit_t,
-                d_nt.create_x = n.commit_x,
-                d_nt.create_y = n.commit_y,
-                d_nt.create_z = n.commit_z,
-                d_nx.id = note.d_nx_id,
-                d_nx.author_id = c.id,
-                d_nx.create_t = n.commit_t,
-                d_nx.create_x = n.commit_x,
-                d_nx.create_y = n.commit_y,
-                d_nx.create_z = n.commit_z,
-                d_ny.id = note.d_ny_id,
-                d_ny.author_id = c.id,
-                d_ny.create_t = n.commit_t,
-                d_ny.create_x = n.commit_x,
-                d_ny.create_y = n.commit_y,
-                d_ny.create_z = n.commit_z,
-                d_nz.id = note.d_nz_id,
-                d_nz.author_id = c.id,
-                d_nz.create_t = n.commit_t,
-                d_nz.create_x = n.commit_x,
-                d_nz.create_y = n.commit_y,
-                d_nz.create_z = n.commit_z
-            )
-          )
-        )
-        WITH note
-        MATCH (n:Note {id: note.properties.id})
-        OPTIONAL MATCH
-          (t:Note:T)<-[d_nt:DEFINE]-(n),
-          (x:Note:X)<-[d_nx:DEFINE]-(n),
-          (y:Note:Y)<-[d_ny:DEFINE]-(n),
-          (z:Note:Z)<-[d_nz:DEFINE]-(n)
-        WITH
-          n,
-          t,
-          x,
-          y,
-          z,
-          d_nt,
-          d_nx,
-          d_ny,
-          d_nz
-        UNWIND {links} AS link
-        MATCH (n1:Note {id: link.properties.start_id}), (n2:Note {id: link.properties.end_id})
-        FOREACH (is_user_link IN CASE WHEN link.properties.author_id = {user_id} THEN [1] ELSE [] END |
-          FOREACH (is_define IN CASE WHEN link.type = 'DEFINE' THEN [1] ELSE [] END |
-            MERGE (n1)-[l:DEFINE {id: link.properties.id}]->(n2)
-            SET l += link.properties
-          )
-          FOREACH (is_present IN CASE WHEN link.type = 'PRESENT' THEN [1] ELSE [] END |
-            MERGE (n1)-[l:PRESENT {id: link.properties.id}]->(n2)
-            SET l += link.properties
-          )
-        )
-        WITH
-          n,
-          t,
-          x,
-          y,
-          z,
-          d_nt,
-          d_nx,
-          d_ny,
-          d_nz,
-          link
-        MATCH ()-[l:DEFINE|PRESENT {id: link.properties.id}]->()
-        RETURN
-          n,
-          t,
-          x,
-          y,
-          z,
-          d_nt,
-          d_nx,
-          d_ny,
-          d_nz,
-          l
-      `;
-
       const state = {
         user_id,
-        note_by_id: {},
+        node_by_id: {},
         link_by_id: {},
       };
-
       let record_count = 0;
 
-      neo4j_driver.session()
-        .run(query, params)
-        .subscribe({
-          onNext: record => {
-            record_count++;
+      const session = neo4j_driver.session();
 
-            const n = record.get('n');
-            state.note_by_id[n.properties.id] = n;
-
-            const t = record.get('t');
-            state.note_by_id[t.properties.id] = t;
-
-            const x = record.get('x');
-            state.note_by_id[x.properties.id] = x;
-
-            const y = record.get('y');
-            state.note_by_id[y.properties.id] = y;
-
-            const z = record.get('z');
-            state.note_by_id[z.properties.id] = z;
-
-            const d_nt = record.get('d_nt');
-            state.link_by_id[d_nt.properties.id] = d_nt;
-
-            const d_nx = record.get('d_nx');
-            state.link_by_id[d_nx.properties.id] = d_nx;
-
-            const d_ny = record.get('d_ny');
-            state.link_by_id[d_ny.properties.id] = d_ny;
-
-            const d_nz = record.get('d_nz');
-            state.link_by_id[z.properties.id] = d_nz;
-
-            const l = record.get('l');
-            state.link_by_id[l.properties.id] = l;
-          },
-          onCompleted: metadata => {
-            console.log('record_count', record_count);
-            console.log(metadata);
-            session.close();
-            resolve(state);
-          },
-          onError: err => {
-            reject(err);
-          },
-        });
+      session.run(query, params).subscribe({
+        onNext: record => {
+          record.forEach((val, key, rec) => {
+            if (val && val.labels) {
+              state.node_by_id[val.properties.id] = val;
+            }
+            else if (val && val.type) {
+              state.link_by_id[val.properties.id] = val;
+            }
+          });
+          record_count++;
+        },
+        onCompleted: metadata => {
+          session.close();
+          resolve(state);
+          //console.log('metadata', metadata);
+          console.log('state', state.user_id, state.node_by_id, state.link_by_id);
+          //console.log('record_count', record_count);
+        },
+        onError: err => {
+          reject(err);
+        },
+      });
     });
   }
 
-  function getNewAuthor({t, x, y, z}) {
-    console.log('getNewAuthor', t, x, y, z);
-    const author_id = uuid();
-    const present_id = uuid();
+  function getPresentation({ vect, user_id }) {
+    console.log('getPresentation', vect, user_id);
+    if (vect == null || user_id == null) {
+      return Promise.resolve({});
+    }
 
-    return setGraph({ // create and return a new (anonymous) author
-      user_id: author_id,
-      note_by_id: {
-        [author_id]: {
-          properties:{
-            id: author_id,
-            author_id,
-            value: author_id,
-            create_t: t,
-            create_x: x,
-            create_y: y,
-            create_z: z,
+    const params = {
+      vect,
+      user_id,
+    };
+
+    const query = `
+      MATCH (user:Node:User {id: {user_id}})
+      SET user.commit_vect = {vect}
+      WITH user
+      MATCH (user)-[:PRESENT* {hide_vect: [], user_id: {user_id}}]->(node:Node)
+      OPTIONAL MATCH (node)-[link:DEFINE|PRESENT]-(node2:Node)
+      RETURN
+        user,
+        node,
+        link,
+        node2
+    `;
+
+    return queryGraph({user_id, query, params});
+  }
+
+  function setGraph({ user_id, node_by_id, link_by_id }) {
+    console.log('setGraph', user_id, node_by_id, link_by_id);
+    // setGraph sets the graph specified in params (links must connect existing nodes)
+    // setGraph has a sideeffect where
+    //   when you commit a node, the node DEFINEs into the coordinate Nodes corresponding with the commit_vect
+    //   to commit a node, we need a node.commit_vect object (outside the properties, to show that this commit is fresh)
+    if (user_id == null) {
+      return Promise.resolve({});
+    }
+
+    const params = {
+      user_id,
+      nodes: Object.keys(node_by_id || {}).map(node_id => node_by_id[node_id]),
+      links: Object.keys(link_by_id || {}).map(link_id => link_by_id[link_id]),
+      o_id: uuid(), // for initial coordination
+    };
+
+    const query = `
+      UNWIND CASE WHEN {nodes} = [] THEN [NULL] ELSE {nodes} END AS node
+      MERGE (n:Node {id: node.properties.id})
+      ON CREATE SET
+        n.init_vect = [timestamp(), 0, 0, 0],
+        n.edit_vect = [],
+        n.hide_vect = [],
+        n.commit_vect = [],
+        n.user_id = {user_id},
+        n.exp = ''
+      FOREACH (has_permission IN CASE WHEN n.user_id = {user_id} THEN [1] ELSE [] END |
+        FOREACH (set_hide_vect IN CASE WHEN node.properties.hide_vect IS NOT NULL THEN [1] ELSE [] END |
+          SET n.hide_vect = node.properties.hide_vect
+        )
+        FOREACH (not_committed IN CASE WHEN n.commit_vect = [] THEN [1] ELSE [] END |
+          SET n += node.properties
+        )
+        FOREACH (is_user IN CASE WHEN n.id = n.user_id THEN [1] ELSE [] END |
+          SET n:User
+        )
+        FOREACH (do_coordination IN CASE WHEN node.coord_vect IS NOT NULL THEN [1] ELSE [] END |
+          MERGE (o:Node:User:Coord)
+          ON CREATE SET
+            o.init_vect = [timestamp(), 0, 0, 0],
+            o.edit_vect = [],
+            o.commit_vect = [],
+            o.hide_vect = [],
+            o.id = {o_id},
+            o.user_id = {o_id},
+            o.exp = 'Coordinator Node\nthe origin/root of the coordinate tree'
+          FOREACH (i IN range(0, length(node.coords)) |
+            MERGE (c:Node:Coord {i: i, exp: node.coords[i]['exp']})
+            ON CREATE SET
+              c.init_vect = [timestamp(), 0, 0, 0],
+              c.edit_vect = [],
+              c.commit_vect = [],
+              c.hide_vect = [],
+              c.id = node.coords[i]['node_id'],
+              c.user_id = o.id
+            CREATE (c)<-[d:DEFINE]-(n)
+            SET
+              d.init_vect = [timestamp(), 0, 0, 0],
+              d.select_vect = [],
+              d.edit_vect = [],
+              d.hide_vect = [],
+              d.id = node.coords[i]['def_id'],
+              d.user_id = o.id,
+              d.end_id = c.id,
+              d.in_index = NULL,
+              d.start_id = n.id,
+              d.out_index = NULL
+          )
+        )
+      )
+      WITH node
+      UNWIND CASE WHEN {links} = [] THEN [NULL] ELSE {links} END AS link
+      MATCH (start:Node {id: link.properties.start_id}), (end:Node {id: link.properties.end_id})
+      FOREACH (is_define IN CASE WHEN link.type = 'DEFINE' THEN [1] ELSE [] END |
+        MERGE (end)<-[d:DEFINE {id: link.properties.id}]-(start)
+        ON CREATE SET
+          d.init_vect = [timestamp(), 0 , 0, 0],
+          d.select_vect = [],
+          d.edit_vect = [],
+          d.hide_vect = [],
+          d.user_id = {user_id}
+        FOREACH (has_permission IN CASE WHEN d.user_id = {user_id} THEN [1] ELSE [] END |
+          SET d += link.properties
+        )
+      )
+      FOREACH (is_present IN CASE WHEN link.type = 'PRESENT' THEN [1] ELSE [] END |
+        MERGE (start)-[p:PRESENT {id: link.properties.id}]->(end)
+        ON CREATE SET
+          p.init_vect = [timestamp(), 0 , 0, 0],
+          p.select_vect = [],
+          p.edit_vect = [],
+          p.hide_vect = [],
+          p.user_id = {user_id},
+          p.enlist = true,
+          p.vect = [0, 0, 0, 0],
+          p.open = true,
+          p.list = true
+        FOREACH (has_permission IN CASE WHEN p.user_id = {user_id} THEN [1] ELSE [] END |
+          SET p += link.properties
+        )
+      )
+      WITH
+        node,
+        link
+      MATCH
+        ()-[l:DEFINE|PRESENT {id: link.properties.id}]->(),
+        (n:Node {id: node.properties.id})-[l2:DEFINE|PRESENT]-(n2:Node)
+      RETURN 
+        l,
+        l2,
+        n,
+        n2
+    `;
+
+    return queryGraph({user_id, query, params})
+  }
+
+  function getNewUser({ vect }) {
+    console.log('getNewUser', vect);
+    const user_id = uuid();
+    const def_id = uuid();
+    const pres_id = uuid();
+    const root_id = uuid();
+
+    return setGraph({ // init and return a new (anonymous) author
+      user_id,
+      node_by_id: {
+        [user_id]: {
+          labels: [NodeLabels.Node, NodeLabels.User],
+          properties: {
+            init_vect: vect,
+            id: user_id,
+          },
+        },
+        [root_id]: {
+          labels: [NodeLabels.Node],
+          properties: {
+            init_vect: vect,
+            id: root_id,
           },
         },
       },
       link_by_id: {
-        [present_id]: {
+        [def_id]: {
+          type: LinkTypes.DEFINE,
           properties: {
-            id: present_id,
-            start_id: author_id,
-            end_id: author_id,
-            author_id,
-            out_index: 0,
+            init_vect: vect,
+            id: def_id,
+            end_id: user_id,
             in_index: 0,
-            current: 1, // if a PRESENT is on the current_path (of PRESENTs) from Author to current_Note (the selected Note), this is the index (min = 1) from the current_Note; here, we indicate the Author is the current_Note
-            frame: 1, // if a PRESENT is on the frame_path (of PRESENTs) form Author to frame_Note (the maximized Note), this is the index (min = 1) from the frame_Note; here, we indicate that the Author is the frame_Note
-            position: NotePositions.STATIC,
-            x: 0,
-            y: 0,
-            display: NoteDisplays.BODY,
-            body: NoteBodies.PLANE,
-            create_t: t,
-            create_x: x,
-            create_y: y,
-            create_z: z,
+            start_id: root_id,
+            out_index: 0,
+          },
+        },
+        [pres_id]: {
+          type: LinkTypes.PRESENT,
+          properties: {
+            init_vect: vect,
+            id: pres_id,
+            start_id: user_id,
+            out_index: 0,
+            end_id: root_id,
+            in_index: 0,
+            list: false,
           },
         },
       },
     });
   }
 
-  function getAuthorId({name, pass}) {
+  function logoutUser({ vect, user_id }) {
+    console.log('logoutUser', vect, user_id);
+    return setGraph({
+      user_id,
+      node_by_id: {
+        [user_id]: {
+          properties: {
+            hide_vect: vect,
+          },
+        },
+      },
+    });
+  }
+
+  function editUser({ vect, user_id, edit_name, edit_email, edit_pass }) {
+    console.log('editUser', vect, user_id);
+
+    return Promise.resolve(edit_pass ? authentication.hashPass(edit_pass) : null)
+    .then(hash => {
+      const properties = {
+        edit_vect: vect,
+        exp: edit_name,
+        email: edit_email,
+      };
+      if (hash) {
+        properties.hash = hash;
+      }
+
+      return setGraph({
+        user_id,
+        node_by_id: {
+          [user_id]: {
+            properties,
+          },
+        },
+      });
+    });
+  }
+
+  function getUserId({ vect, name, pass }) {
+    console.log('getUserId', vect, name, pass);
     return new Promise((resolve, reject) => {
       const params = {
         name,
@@ -315,97 +304,46 @@ module.exports = function({neo4j_driver_config}) {
       };
 
       const query = `
-        MATCH (a:Note:Author {value: {name}})
-        RETURN a
+        MATCH (user:Node:User {exp: {name}})
+        RETURN user
       `
 
       let user;
-      neo4j_driver.session()
-        .run(query, params)
-        .subscribe({
-          onNext: record => {
-            a = record.get('a');
-          },
-          onCompleted: metadata => {
-            console.log(metadata);
-            if (a) {
-              const { id, hash } = a.properties;
-              if (pass == null && hash == null) {
-                resolve({user_id: id});
-              }
-              else if (pass != null && hash != null) {
-                authentication.comparePassword({pass, hash})
-                  .then(is_match => {
-                    if (is_match) {
-                      resolve({user_id: id});
-                    }
-                    else {
-                      reject(new Error('invalid pass'));
-                    }
-                  });
-              }
+      const session = neo4j_driver.session()
+
+      session.run(query, params).subscribe({
+        onNext: record => {
+          user = record.get('user');
+        },
+        onCompleted: metadata => {
+          console.log(metadata);
+          if (user) {
+            const { id, hash } = user.properties;
+            if (pass == null && hash == null) {
+              resolve({user_id: id});
             }
-            else {
-              reject(new Error('no user with that name'));
+            else if (pass != null && hash != null) {
+              authentication.comparePassword({pass, hash})
+              .then(is_match => {
+                if (is_match) {
+                  resolve({user_id: id});
+                }
+                else {
+                  resolve({user_id: null});
+                }
+              });
             }
-          },
-          onError: err => {
-            reject(err);
           }
-        })
+          else {
+            resolve({user_id: null});
+          }
+        },
+        onError: err => {
+          reject(err);
+        }
+      })
     })
   }
-
-  function getPresence(user_id) {
-    return new Promise((resolve, reject) => {
-      const params = {
-        user_id
-      };
-      const query = `
-        MATCH ()-[:PRESENT {author_id: {user_id}}]->(note:Note)
-        OPTIONAL MATCH (note)-[link:DEFINE|PRESENT]-(note2:Note)
-        RETURN
-          note,
-          link,
-          note2
-      `;
-
-      const state = {
-        user_id,
-        note_by_id: {},
-        link_by_id: {},
-      };
-
-      let record_count = 0;
-
-      neo4j_driver.session()
-        .run(query, params)
-        .subscribe({
-          onNext: record => {
-            record_count++;
-
-            const note = record.get('note');
-            state.note_by_id[note.properties.id] = note;
-
-            const link = record.get('link');
-            state.link_by_id[link.properties.id] = link;
-
-            const note2 = record.get('note2');
-            state.note_by_id[note2.properties.id] = note2;
-          },
-          onCompleted: metadata => {
-            console.log('record_count', record_count);
-            console.log(metadata);
-            session.close();
-            resolve(state);
-          },
-          onError: err => {
-            reject(err)
-          },
-        });
-    });
-  }
-
 
 }
 

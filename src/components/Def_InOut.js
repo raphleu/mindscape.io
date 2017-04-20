@@ -1,9 +1,7 @@
 import React, { PropTypes } from 'react';
 import { connect } from 'react-redux'; 
 
-import { PositionModes, DisplayModes } from '../types';
-
-export class Arrow extends React.Component<IArrowProps, IArrowState> { //Arrow!
+export class DefineArrow extends React.Component {
   constructor(props) {
     super(props);
   }
@@ -103,4 +101,4 @@ function mapDispatchToProps(dispatch) {
 
   };
 }
-export const ArrowContainer = connect(mapStateToProps, mapDispatchToProps)(Arrow);
+export const DefineArrowContainer = connect(mapStateToProps, mapDispatchToProps)(DefineArrow);

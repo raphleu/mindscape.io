@@ -23,6 +23,7 @@
     "neo4j-driver": "^1.1.1",
     "node-geocoder": "^3.16.0",
     "postcss-loader": "^0.9.1",
+    "prop-types": "^15.5.8",
     "react": "^15.3.2",
     "react-dnd": "^2.1.4",
     "react-dnd-html5-backend": "^2.1.2",
@@ -42,6 +43,7 @@
     "webpack": "^2.2.1"
   },
   "devDependencies": {
+    "mocha": "^3.2.0",
     "react-hot-loader": "^3.0.0-beta.6",
     "redux-devtools": "^3.3.1",
     "webpack-dev-middleware": "^1.8.4",
