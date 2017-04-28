@@ -1,30 +1,63 @@
+import React from 'react';
 import { PropTypes } from 'prop-types';
 
-export function UserVector(props) {
-  const { getVect } = props;
+export class UserVector extends React.Component {
+  constructor(props) {
+    super(props);
 
-  const vect = getVect();
+    const { getVect } = props;
+    
+    this.state = {
+      vect: getVect(),
+      timer_id: null,
+    };
 
-  const time = new Date(vect[0]);
+    this.updateVect = this.updateVect.bind(this);
+  }
 
-  const space = vect.slice(1);
+  updateVect() {
+    const { getVect } = this.props;
 
-  return (
-    <div id='userVector'>
-      <div id='time'>
-        { time.toString() }
+    this.setState({
+      vect: getVect(),
+    });
+  }
+
+  componentDidMount() {
+    this.setState({
+      timer_id: setInterval(this.updateVect, 500),
+    });
+  }
+
+  componentWillUnmount() {
+    clearInterval(timer_id);
+  }
+
+  render() {
+    const { vect } = this.state;
+
+    const time = new Date(vect[0]);
+
+    const space = vect.slice(1);
+
+    return (
+      <div id='userVector'>
+        <div id='time'>
+          { time.toString() }
+        </div>
+        <div id='space'>
+          { 
+            space.map((exp, i) => (
+              <div key={'vect-'+(i+1)}>
+                { exp }
+              </div>
+            ))
+          }
+        </div>
       </div>
-      <div id='space'>
-        { 
-          space.map((exp, i) => (
-            <div key={'vect-'+(i+1)}>
-              { exp }
-            </div>
-          ))
-        }
-      </div>
-    </div>
-  );
+    );
+  }
+ 
 }
 
 UserVector.propTypes = {

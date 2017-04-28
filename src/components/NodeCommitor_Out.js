@@ -71,7 +71,7 @@ class NodeCommitor extends React.Component {
         minWidth: 200,
       }}>
         {
-          node.properties.commit_vect.length !== 0
+          node.properties.commit_v.length !== 0
             ? 'committed!'
             : committing
                 ? (

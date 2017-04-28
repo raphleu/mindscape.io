@@ -1,32 +1,16 @@
-const mindscape = require('./services/index.js');
 const express = require('express');
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
-const path = require('path');
 
-const uuid = require('uuid/v4');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
 
-const graphenedb_config = {
-  host: process.env.GRAPHENEDB_BOLT_URL,
-  user: process.env.GRAPHENEDB_BOLT_USER,
-  pass: process.env.GRAPHENEDB_BOLT_PASSWORD,
-};
+const neo4j = require('neo4j-driver').v1;
 
-const my_graphenedb_config = {
-  host: 'bolt://hobby-giphgfjnbmnagbkepekepdnl.dbs.graphenedb.com:24786',
-  user: 'app56614688-dYRNeO',
-  pass: '6pQjlv4oiV5HXJBrqZp8',
-}; // TODO: don't post this publicly, someone might mess with it-- but really no one cares right now, you don't even have any users man, so whatever-- but really, don't post it lol, maybe someone will look at your old commits and hack youuuuu; ok, i'll remember...
+const path = require('path');
+const uuid = require('uuid/v4');
 
-const local_neo4j_config = {
-  host: 'http://localhost:7474',
-  user: 'neo4j',
-  pass: 'o4jw4lru5H!d3',
-};
-
-const services = mindscape({neo4j_driver_config: my_graphenedb_config});
+const service = require('./services/index.js')();
 
 const server = express();
 
@@ -70,75 +54,186 @@ function respond(callback) {
   return (req, res) => {
     return Promise.resolve(callback(req, res))
     .then(data => {
-      res.status(200).json({data});
+      if (data.error) {
+        console.log(data.error);
+        res.status(400).json({data});
+      }
+      else {
+        res.status(200).json({data});
+      }
     })
-    .catch(err => {
-      console.error(err);
+    .catch(error => {
+      console.error(error);
       res.status(500).json({data: err});
     });
   };
 }
 
-server.post('/api/resume', respond((req, res) => {
-  const { user_id } = req.session;
-  const { vect } = req.body;
-  console.log('resume');
-  return services.getPresentation({vect, user_id});
-}));
+const neo4j_configs = {
+  process_env: {
+    host: process.env.GRAPHENEDB_BOLT_URL,
+    user: process.env.GRAPHENEDB_BOLT_USER,
+    pass: process.env.GRAPHENEDB_BOLT_PASSWORD,
+  },
+  my_graphenedb: {
+    host: 'bolt://hobby-giphgfjnbmnagbkepekepdnl.dbs.graphenedb.com:24786',
+    user: 'app56614688-dYRNeO',
+    pass: '6pQjlv4oiV5HXJBrqZp8',
+  },
+  local: {
+    host: 'bolt://localhost:7687',
+    user: 'neo4j',
+    pass: 'o4jw4lru5H!d3',
+  },
+};// TODO: don't post this publicly, someone might mess with it-- but really no one cares right now, you don't even have any users man, so whatever-- but really, don't post it lol, maybe someone will look at your old commits and hack youuuuu; ok, i'll remember...
+
+const { host, user, pass } = neo4j_configs['my_graphenedb'];
+const neo4j_driver = neo4j.driver(host, neo4j.auth.basic(user, pass));
 
 server.post('/api/register', respond((req, res) => {
   const { user_id } = req.session;
   const { vect } = req.body;
+
   console.log('register');
-  return services.logoutUser({vect, user_id}).then(() => {
-    return services.getNewUser({vect}).then(({ user_id }) => {
-      req.session.user_id = user_id;
-      return services.getPresentation({vect, user_id});
+
+  const session = neo4j_driver.session();
+  const tx = session.beginTransaction();
+
+  return Promise.resolve(user_id)
+    .then(user_id => {
+      if (user_id != null) {
+        return service.logout({tx, user_id, vect});  
+      }
+      return {};
+    })
+    .then(() => {
+      return service.init({tx, vect})
+    })
+    .then(dish => {
+      tx.commit();
+      session.close();
+      
+      req.session.user_id = dish.user_id;
+      
+      return dish;
     });
-  });
 }));
 
-server.post('/api/login', respond((req, res) => {
+server.post('/api/resume', respond((req, res) => {
   const { user_id } = req.session;
-  const { vect, name, pass } = req.body;
-  console.log('login');
-  return services.logoutUser({vect, user_id}).then(() => {
-    return services.getUserId({vect, name, pass}).then(({ user_id }) => {
-      if (user_id) {
-        req.session.user_id = user_id;
-        return services.getPresentation({vect, user_id})
-      }
-      else {
-        return {}; // login failed
-      }
+  const { vect } = req.body;
+
+  console.log('resume');
+
+  if (user_id != null) {
+    const session = neo4j_driver.session();
+    const tx = session.beginTransaction();
+
+    return service.get({tx, user_id, vect})
+      .then(dish => {
+        tx.commit();
+        session.close();
+
+        return dish;
+      });
+  }
+  else {
+    return {};
+  }
+}));
+
+server.post('/api/set', respond((req, res) => {
+  const { user_id } = req.session;
+  const { vect, node_by_id, link_by_id } = req.body;
+
+  console.log('dish');
+
+  const session = neo4j_driver.session();
+  const tx = session.beginTransaction();
+
+  return service.set({tx, user_id, vect, node_by_id, link_by_id})
+    .then(dish => {
+      tx.commit();
+      session.close();
+
+      return dish;
     });
-  });
+}));
+
+server.post('/api/sign', respond((req, res) => {
+  const { user_id } = req.session;
+  const { vect, pass, edit_pass } = req.body;
+
+  console.log('sign');
+
+  const session = neo4j_driver.session();
+  const tx = session.beginTransaction();
+
+  return service.sign({tx, user_id, vect, pass, edit_pass})
+    .then(dish => {
+      tx.commit();
+      session.close();
+
+      return dish;
+    });
 }));
 
 server.post('/api/logout', respond((req, res) => {
   const { user_id } = req.session;
   const { vect } = req.body;
+
   console.log('logout');
-  return services.logoutUser({vect, user_id});
+
+  const session = neo4j_driver.session();
+  const tx = session.beginTransaction();
+
+  return service.logout({user_id, vect})
+    .then(dish => {
+      tx.commit();
+      session.close();
+
+      return dish;
+    });
 }));
 
-server.post('/api/pass', respond((req, res) => {
+server.post('/api/login', respond((req, res) => {
   const { user_id } = req.session;
-  const { vect, pass, edit_pass } = req.body;
-  console.log('pass');
+  const { vect, name, pass } = req.body;
 
-  return services.editUserPass({vect, user_id, pass, edit_pass});
-}));
+  console.log('login');
 
-server.post('/api/graph', respond((req, res) => {
-  const { user_id } = req.session;
-  const { node_by_id, link_by_id } = req.body;
-  console.log('graph');
-  return services.setGraph({
-    user_id,
-    node_by_id,
-    link_by_id,
-  });
+  const session = neo4j_driver.session();
+  const tx = session.beginTransaction();
+
+  return Promise.resolve(user_id)
+    .then(user_id => {
+      if (user_id != null) {
+        return service.logout({user_id, vect});
+      }
+      return {};
+    })
+    .then(() => {
+      return service.login({vect, name, pass})
+        .then(({ user_id }) => {
+          if (user_id) {
+            req.session.user_id = user_id;
+
+            return service.get({user_id, vect})
+              .then(dish => {
+                tx.commit();
+                session.close();
+
+                return dish;
+              });
+          }
+          else {
+            tx.commit();
+            session.close();
+
+            return {}; // login failed
+          }
+        });
+    });
 }));
 
 server.listen(server.get('port'), () => {

@@ -4,7 +4,7 @@ import {
   FETCH_REGISTER,
   FETCH_LOGIN,
   FETCH_LOGOUT,
-  FETCH_EDIT,
+  FETCH_SIGN,
   //
   FETCH_NODE_INIT,
   FETCH_NODE_HIDE,
@@ -23,12 +23,12 @@ import { routerReducer as routing } from 'react-router-redux';
 
 function fetching(state = false, action) {
   switch (action.type) {
+    case FETCH_REGISTER:
     case FETCH_RESUME:
     //
-    case FETCH_REGISTER:
-    case FETCH_LOGIN:
+    case FETCH_SIGN:
     case FETCH_LOGOUT:
-    case FETCH_EDIT:
+    case FETCH_LOGIN:
     //
     case FETCH_NODE_INIT:
     case FETCH_NODE_HIDE:
@@ -49,8 +49,8 @@ function fetching(state = false, action) {
 function user_id(state = '', action) {
   switch (action.type) {
     case FETCH_REGISTER:
-    case FETCH_LOGIN:
     case FETCH_LOGOUT:
+    case FETCH_LOGIN:
       return '';
     case ACCEPT_FETCH:
       return (action.payload.user_id != null) ? action.payload.user_id : state;
@@ -62,8 +62,8 @@ function user_id(state = '', action) {
 function node_by_id(state = {}, action) {
   switch (action.type) {
     case FETCH_REGISTER:
-    case FETCH_LOGIN:
     case FETCH_LOGOUT:
+    case FETCH_LOGIN:
       return {};
     //
     case FETCH_NODE_INIT:
@@ -93,8 +93,8 @@ const empty_links = {
 function links(state = empty_links, action) {
   switch (action.type) {
     case FETCH_REGISTER:
-    case FETCH_LOGIN:
     case FETCH_LOGOUT:
+    case FETCH_LOGIN:
       return empty_links;
     //
     case FETCH_NODE_INIT:

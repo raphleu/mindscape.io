@@ -78,7 +78,7 @@ export const Notation_InOut = connect(state => {
       const link = link_by_id[link_id];
 
       if (
-        link.properties.select_vect[0] === pres.properties.select_vect[0] && // select path press will have identical select_vect
+        link.properties.select_v[0] === pres.properties.select_v[0] && // select path press will have identical select_v
         link.type === LinkTypes.PRESENT
       ) {
         select_press.push(link);

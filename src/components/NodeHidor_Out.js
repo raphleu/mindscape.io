@@ -46,7 +46,7 @@ class NodeHidor extends React.Component {
         minWidth: 200,
       }}>
         {
-          node.properties.hide_vect.length === 0
+          node.properties.hide_v.length === 0
             ? (
               <div className='hide button' onClick={this.hide} style={style.button}>
                 <div className='content' style={style.button_content}>

@@ -27,7 +27,7 @@ function Note1(props) {
 
   const pres = path_press[path_press.length - 1]; // node_pres
 
-  const selected = (pres.properties.select_vect[0] === path_press[0].properties.select_vect[0]); // selection updates select_vect of entire path
+  const selected = (pres.properties.select_v[0] === path_press[0].properties.select_v[0]); // selection updates select_v of entire path
   const exact_selected = (pres.properties.id === select_press[select_press.length - 1].properties.id);
 
   const listed = (

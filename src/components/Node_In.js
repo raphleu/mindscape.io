@@ -14,7 +14,7 @@ class Node extends React.Component {
 
     const pres = path_press[path_press.length - 1];
 
-    const selected = (pres.properties.select_vect[0] === path_press[0].properties.select_vect[0]);
+    const selected = (pres.properties.select_v[0] === path_press[0].properties.select_v[0]);
     const exact_selected = (pres.properties.id === select_press[select_press.length - 1].properties.id);
 
     return (
@@ -42,7 +42,7 @@ class Node extends React.Component {
             <div className='value' style={{
               display: 'inline-block',
               margin: 2,
-              border: node.properties.commit_vect ? 'none' : '1px solid darkorchid',
+              border: node.properties.commit_v ? 'none' : '1px solid darkorchid',
               borderTopRightRadius: 4,
               borderBottomLeftRadius: 4,
               padding: 2,
@@ -50,7 +50,7 @@ class Node extends React.Component {
               whiteSpace: 'nowrap',
             }}>
               {
-                (node.properties.user_id != user.properties.id || node.properties.commit_vect.length !== 0)
+                (node.properties.user_id != user.properties.id || node.properties.commit_v.length !== 0)
                   ? node.properties.string
                   : (
                     <NodeEditor_Out

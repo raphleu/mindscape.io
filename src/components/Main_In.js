@@ -58,15 +58,11 @@ class Main extends React.Component {
 
   getVect() {
     const { vect } = this.state;
-
-    console.log('getVect', vect);
-
+    
     return vect;
   }
 
   componentDidMount() {
-    const { vect } = this.state;
-
     this.setState({
       timer_id: setInterval(this.setVectTime, 200),
       spacer_id: navigator.geolocation

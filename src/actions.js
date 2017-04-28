@@ -28,12 +28,12 @@ function getExpFromNodeEditorState(node) {
   return node.editorState.getCurrentContent().getPlainText(); // TODO FIXME
 }
 
+export const FETCH_REGISTER = 'FETCH_REGISTER';
 export const FETCH_RESUME = 'FETCH_RESUME';
 
-export const FETCH_REGISTER = 'FETCH_REGISTER';
-export const FETCH_LOGIN = 'FETCH_LOGIN';
+export const FETCH_SIGN = 'FETCH_SIGN'
 export const FETCH_LOGOUT = 'FETCH_LOGOUT';
-export const FETCH_EDIT = 'FETCH_EDIT'
+export const FETCH_LOGIN = 'FETCH_LOGIN';
 
 export const FETCH_NODE_INIT = 'FETCH_NODE_INIT';
 export const FETCH_NODE_HIDE = 'FETCH_NODE_HIDE';
@@ -51,11 +51,32 @@ export const REJECT_FETCH = 'REJECT_FETCH';
 // TODO init from local storage
 // TODO store state into local storage... on every change? by dispatching action from Notation?
 
+export function register({ vect }) {
+  return dispatch => {
+    const params = {vect};
+
+    dispatch({
+      type: FETCH_REGISTER,
+      payload: params,
+    });
+
+    fetch('/api/register', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: new Headers({
+        'Content-Type': 'application/json',
+      }),
+      body: JSON.stringify(params),
+    })
+    .then(resolveFetch(dispatch));
+  };
+}
+
 export function resume({ vect }) {
   return dispatch => {
     // TODO init from local storage (eventually integrate with git)
     const params = {
-      vect
+      vect,
     };
 
     dispatch({
@@ -75,16 +96,41 @@ export function resume({ vect }) {
   };
 }
 
-export function register({ vect }) {
+export function sign({ vect, pass, edit_pass }) {
+  return dispatch => {
+    const params = {
+      vect,
+      pass,
+      edit_pass,
+    };
+
+    dispatch({
+      type: FETCH_SIGN,
+      payload: params,
+    });
+
+    fetch('/api/sign', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: new Headers({
+        'Content-Type': 'application/json',
+      }),
+      body: JSON.stringify(params),
+    })
+    .then(resolveFetch(dispatch));
+  }
+}
+
+export function logout({ vect }) {
   return dispatch => {
     const params = {vect};
 
     dispatch({
-      type: FETCH_REGISTER,
+      type: FETCH_LOGOUT,
       payload: params,
     });
 
-    fetch('/api/register', {
+    fetch('/api/logout', {
       method: 'POST',
       credentials: 'same-origin',
       headers: new Headers({
@@ -121,27 +167,6 @@ export function login({ vect, name, pass }) {
   };
 }
 
-export function logout({ vect }) {
-  return dispatch => {
-    const params = {vect};
-
-    dispatch({
-      type: FETCH_LOGOUT,
-      payload: params,
-    });
-
-    fetch('/api/logout', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: new Headers({
-        'Content-Type': 'application/json',
-      }),
-      body: JSON.stringify(params),
-    })
-    .then(resolveFetch(dispatch));
-  };
-}
-
 export function edit({ vect, user, name, email }) {
   return dispatch => {
     const node = Object.assign({}, user, {
@@ -163,37 +188,11 @@ export function edit({ vect, user, name, email }) {
     };
 
     dispatch({
-      type: FETCH_EDIT,
+      type: FETCH_SIGN,
       payload: params,
     });
 
     fetch('/api/graph', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: new Headers({
-        'Content-Type': 'application/json',
-      }),
-      body: JSON.stringify(params),
-    })
-    .then(resolveFetch(dispatch));
-  }
-}
-
-export function pass({ vect, user, pass, edit_pass }) {
-  return dispatch => {
-    const params = {
-      vect,
-      user, 
-      pass,
-      edit_pass,
-    };
-
-    dispatch({
-      type: FETCH_PASS,
-      payload: params,
-    });
-
-    fetch('/api/pass', {
       method: 'POST',
       credentials: 'same-origin',
       headers: new Headers({

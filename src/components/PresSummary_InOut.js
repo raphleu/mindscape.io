@@ -70,7 +70,7 @@ class PresSummary extends React.Component {
           <div className='def-details' style={{
             display: 'inline-block',
             margin: 2,
-            border: node.properties.commit_vect ? 'none' : '1px solid darkorchid',
+            border: node.properties.commit_v ? 'none' : '1px solid darkorchid',
             borderTopRightRadius: 4,
             borderBottomLeftRadius: 4,
             padding: 2,
@@ -78,7 +78,7 @@ class PresSummary extends React.Component {
             whiteSpace: 'nowrap',
           }}>
             {
-              init_vect.join(',') + '\n' + hide_vect.join(',') + '\n' + select_vect.join(',') + '\n' + edit_vect.join(',')
+              init_v.join(',') + '\n' + hide_v.join(',') + '\n' + select_v.join(',') + '\n' + edit_v.join(',')
             }
           </div>
           <div className='out-index' style={{
@@ -132,7 +132,7 @@ export const PresSummary_InOut = connect((state, ownProps) => {
 
       if (
         link.properties.user_id === user_id &&
-        link.properties.hide_vect.length === 0 && // not hidden/deleted
+        link.properties.hide_v.length === 0 && // not hidden/deleted
         link.type === LinkTypes.PRESENT
       ) {
         partner_path_press.push(link);

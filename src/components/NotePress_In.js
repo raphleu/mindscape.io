@@ -28,7 +28,7 @@ class NotePress extends React.Component { //NotePressPress
     out_press.forEach(out_pres => {
       if (
         out_pres.properties.user_id === user.properties.id &&
-        out_pres.properties.hide_vect.length === 0
+        out_pres.properties.hide_v.length === 0
       ) {
         if (pres.properties.list || out_pres.properties.enlist) {
           child_press.push(out_pres);
