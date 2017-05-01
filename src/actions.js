@@ -3,23 +3,35 @@ import { NodeLabels, LinkTypes } from './types';
 import uuid from 'uuid/v4';
 import { now } from 'lodash';
 
+import * as firebase from 'firebase/app';
+import 'firebase/auth';
+
 function resolveFetch(dispatch) {
   return response => {
     console.log('res', response);
     response.json()
-    .then(json => {
-      if (response.ok) {
-        dispatch({
-          type: ACCEPT_FETCH,
-          payload: json.data,
-        });
-      }
-      else {
-        dispatch({
-          type: REJECT_FETCH,
-          payload: json.data,
-        });
-      }
+      .then(json => {
+        if (response.ok) {
+          dispatch({
+            type: ACCEPT_FETCH,
+            payload: json.data,
+          });
+        }
+        else {
+          dispatch({
+            type: REJECT_FETCH,
+            payload: json.data,
+          });
+        }
+      });
+  };
+}
+
+function resolveError(dispatch) {
+  return error => {
+    dispatch({
+      type: REJECT_FETCH,
+      payload: error,
     });
   };
 }
@@ -27,6 +39,9 @@ function resolveFetch(dispatch) {
 function getExpFromNodeEditorState(node) {
   return node.editorState.getCurrentContent().getPlainText(); // TODO FIXME
 }
+
+export const AUTH_INIT = 'AUTH_INIT';
+export const AUTH_CHANGE = 'AUTH_CHANGE';
 
 export const FETCH_REGISTER = 'FETCH_REGISTER';
 export const FETCH_RESUME = 'FETCH_RESUME';
@@ -51,48 +66,103 @@ export const REJECT_FETCH = 'REJECT_FETCH';
 // TODO init from local storage
 // TODO store state into local storage... on every change? by dispatching action from Notation?
 
-export function register({ vect }) {
-  return dispatch => {
-    const params = {vect};
-
-    dispatch({
-      type: FETCH_REGISTER,
-      payload: params,
-    });
-
-    fetch('/api/register', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: new Headers({
-        'Content-Type': 'application/json',
-      }),
-      body: JSON.stringify(params),
-    })
-    .then(resolveFetch(dispatch));
+export function authInit({ vect }) {
+  return {
+    type: AUTH_INIT,
+    payload: {
+      vect,
+    },
   };
 }
 
-export function resume({ vect }) {
+export function authChange({ auth_init, auth_user, vect }) {
   return dispatch => {
-    // TODO init from local storage (eventually integrate with git)
-    const params = {
-      vect,
-    };
-
     dispatch({
-      type: FETCH_RESUME,
-      payload: params,
+      type: AUTH_CHANGE,
+      payload: {
+        auth_user,
+        vect,
+      },
     });
 
-    fetch('/api/resume', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: new Headers({
-        'Content-Type': 'application/json',
-      }),
-      body: JSON.stringify(params),
-    })
-    .then(resolveFetch(dispatch));
+    if (auth_init) {
+      if (auth_user) {
+        dispatch(resume({
+          auth_user,
+          vect,
+        }));
+      }
+      else {
+        dispatch(register({
+          vect,
+        }));
+      }
+    }
+  };
+}
+
+export function register({ vect }) {
+  return dispatch => {
+    dispatch({
+      type: AUTH_REGISTER,
+      payload: {
+        vect
+      },
+    });
+
+    firebase.auth().signInAnonymously().then(auth_user => {
+      auth_user.getToken(true).then(token => {
+        const params = {
+          token,
+          vect,
+        };
+
+        dispatch({
+          type: FETCH_REGISTER,
+          payload: params,
+        });
+
+        fetch('/api/register', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: new Headers({
+            'Content-Type': 'application/json',
+          }),
+          body: JSON.stringify(params),
+        }).then(resolveFetch(dispatch)).catch(resolveError(dispatch));
+      });
+    }).catch(error => {
+      console.error('auth error', error);
+    });
+  };
+}
+
+export function resume({ auth_user, vect }) {
+  return dispatch => {
+    // TODO init from local storage (eventually integrate with git)
+
+    auth_user.getToken(true).then(token => {
+      const params = {
+        token,
+        vect,
+      };
+
+      dispatch({
+        type: FETCH_RESUME,
+        payload: params,
+      });
+
+      fetch('/api/resume', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: new Headers({
+          'Content-Type': 'application/json',
+        }),
+        body: JSON.stringify(params),
+      }).then(resolveFetch(dispatch)).catch(resolveError(dispatch));
+    }).catch(error => {
+      console.error('auth error', error);
+    });
   };
 }
 
@@ -117,7 +187,8 @@ export function sign({ vect, pass, edit_pass }) {
       }),
       body: JSON.stringify(params),
     })
-    .then(resolveFetch(dispatch));
+    .then(resolveFetch(dispatch))
+    .catch(resolveError(dispatch));
   }
 }
 
@@ -138,7 +209,8 @@ export function logout({ vect }) {
       }),
       body: JSON.stringify(params),
     })
-    .then(resolveFetch(dispatch));
+    .then(resolveFetch(dispatch))
+    .catch(resolveError(dispatch));
   };
 }
 
@@ -163,11 +235,12 @@ export function login({ vect, name, pass }) {
       }),
       body: JSON.stringify(params),
     })
-    .then(resolveFetch(dispatch));
+    .then(resolveFetch(dispatch))
+    .catch(resolveError(dispatch));
   };
 }
 
-export function edit({ vect, user, name, email }) {
+export function userEdit({ vect, user, name, email }) {
   return dispatch => {
     const node = Object.assign({}, user, {
       properties: Object.assign({}, user.properties),
@@ -192,7 +265,7 @@ export function edit({ vect, user, name, email }) {
       payload: params,
     });
 
-    fetch('/api/graph', {
+    fetch('/api/set', {
       method: 'POST',
       credentials: 'same-origin',
       headers: new Headers({
@@ -200,7 +273,8 @@ export function edit({ vect, user, name, email }) {
       }),
       body: JSON.stringify(params),
     })
-    .then(resolveFetch(dispatch));
+    .then(resolveFetch(dispatch))
+    .catch(resolveError(dispatch));
   }
 }
 
@@ -216,10 +290,10 @@ export function nodeInit({vect, user, parent_path_press, parent_out_press, paren
         [child_id]: {
           labels: [NodeLabels.Node],
           properties: {
-            init_vect: vect,
-            hide_vect: [],
-            commit_vect: [],
-            edit_vect: [],
+            init_v: vect,
+            hide_v: [],
+            commit_v: [],
+            edit_v: [],
             id: child_id,
             user_id: user.properties.id,
             exp: '',
@@ -230,7 +304,7 @@ export function nodeInit({vect, user, parent_path_press, parent_out_press, paren
         return Object.assign(pres_by_id, {
           [pres.properties.id]: Object.assign({}, pres, {
             properties: Object.assign({}, pres.properties, {
-              select_vect: vect,
+              select_v: vect,
             }),
           }),
         });
@@ -238,10 +312,10 @@ export function nodeInit({vect, user, parent_path_press, parent_out_press, paren
         [pres_id]: {
           type: LinkTypes.PRESENT,
           properties: {
-            init_vect: vect,
-            hide_vect: [],
-            select_vect: vect, // newly init Node is auto selected
-            edit_vect: [],
+            init_v: vect,
+            hide_v: [],
+            select_v: vect, // newly init Node is auto selected
+            edit_v: [],
             id: pres_id,
             user_id: user.properties.id,
             start_id: parent_id,
@@ -249,7 +323,7 @@ export function nodeInit({vect, user, parent_path_press, parent_out_press, paren
               return (push_index > pres.properties.out_index ) ? push_index : pres.properties.out_index + 1;
             }, 0),
             enlist: true,
-            vect: [0, 0, 0, 0],
+            v: [0, 0, 0, 0],
             end_id: child_id,
             in_index: 0,
             open: true,
@@ -259,10 +333,10 @@ export function nodeInit({vect, user, parent_path_press, parent_out_press, paren
         [def_id]: {
           type: LinkTypes.DEFINE,
           properties: {
-            init_vect: vect,
-            hide_vect: [],
-            select_vect: [],
-            edit_vect: [],
+            init_v: vect,
+            hide_v: [],
+            select_v: [],
+            edit_v: [],
             id: def_id,
             user_id: user.properties.id,
             end_id: parent_id,
@@ -281,7 +355,7 @@ export function nodeInit({vect, user, parent_path_press, parent_out_press, paren
       payload: params
     });
 
-    fetch('/api/graph', {
+    fetch('/api/set', {
       method: 'POST',
       credentials: 'same-origin',
       headers: new Headers({
@@ -289,7 +363,8 @@ export function nodeInit({vect, user, parent_path_press, parent_out_press, paren
       }),
       body: JSON.stringify(params),
     })
-    .then(resolveFetch(dispatch));
+    .then(resolveFetch(dispatch))
+    .catch(resolveError(dispatch));
   };
 }
 
@@ -299,7 +374,7 @@ export function nodeEdit({vect, node}) {
       node_by_id: {
         [node.properties.id]: Object.assign({}, node, {
           properties: Object.assign({}, node.properties, {
-            edit_vect: vect,
+            edit_v: vect,
             exp: getExpFromNodeEditorState(node), 
           }),
         }),
@@ -311,7 +386,7 @@ export function nodeEdit({vect, node}) {
       payload: params,
     });
 
-    fetch('/api/graph', {
+    fetch('/api/set', {
       method: 'POST',
       credentials: 'same-origin',
       headers: new Headers({
@@ -319,7 +394,8 @@ export function nodeEdit({vect, node}) {
       }),
       body: JSON.stringify(params), // TODO strip editorState from posted params? (for efficiency) ideally we'd store this info though
     })
-    .then(resolveFetch(dispatch));
+    .then(resolveFetch(dispatch))
+    .catch(resolveError(dispatch));
   };
 }
 
@@ -329,7 +405,7 @@ export function nodeCommit({ vect, node }) {
       node_by_id: {
         [node.properties.id]: Object.assign({}, node, {
           properties: Object.assign({}, node.properties, {
-            commit_vect: vect,
+            commit_v: vect,
             exp: getExpFromNodeEditorState(node), 
           }),
           coords: vect.map(exp => {
@@ -348,7 +424,7 @@ export function nodeCommit({ vect, node }) {
       payload: params,
     });
 
-    fetch('/api/graph', { // TODO special fetch url? for specific commit function? yes!
+    fetch('/api/set', { // TODO special fetch url? for specific commit function? yes!
       method: 'POST',
       credentials: 'same-origin',
       headers: new Headers({
@@ -356,7 +432,8 @@ export function nodeCommit({ vect, node }) {
       }),
       body: JSON.stringify(params),
     })
-    .then(resolveFetch(dispatch));
+    .then(resolveFetch(dispatch))
+    .catch(resolveError(dispatch));
   };
 }
 
@@ -366,7 +443,7 @@ export function nodeHide({ vect, node }) {
       node_by_id: {
         [node.properties.id]: Object.assign({}, node, {
           properties: Object.assign({}, node.properties, {
-            hide_vect: (node.properties.hide_vect.length === 0) ? vect : [], // unhides if already hidden
+            hide_v: (node.properties.hide_v.length === 0) ? vect : [], // unhides if already hidden
           }),
         }),
       },
@@ -377,7 +454,7 @@ export function nodeHide({ vect, node }) {
       payload: params
     });
 
-    fetch('/api/graph', {
+    fetch('/api/set', {
       method: 'POST',
       credentials: 'same-origin',
       headers: new Headers({
@@ -385,7 +462,8 @@ export function nodeHide({ vect, node }) {
       }),
       body: JSON.stringify(params),
     })
-    .then(resolveFetch(dispatch));
+    .then(resolveFetch(dispatch))
+    .catch(resolveError(dispatch));
   };
 }
 
@@ -396,7 +474,7 @@ export function nodeSelect({ vect, path_press }) {
         return Object.assign({}, link_by_id, {
           [pres.properties.id]: Object.assign({}, pres, {
             properties: Object.assign({}, pres.properties, {
-              select_vect: vect,
+              select_v: vect,
             }),
           }),
         });
@@ -408,7 +486,7 @@ export function nodeSelect({ vect, path_press }) {
       payload: params,
     });
 
-    fetch(`/api/graph`, {
+    fetch(`/api/set`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: new Headers({
@@ -416,7 +494,8 @@ export function nodeSelect({ vect, path_press }) {
       }),
       body: JSON.stringify(params),
     })
-    .then(resolveFetch(dispatch));
+    .then(resolveFetch(dispatch))
+    .catch(resolveError(dispatch));
   };
 }
 
@@ -464,7 +543,7 @@ export function nodeMove({vect, user, modify_read, delete_read, create_read}) {
       payload: params,
     });
 
-    fetch(`/api/graph`, {
+    fetch(`/api/set`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: new Headers({
@@ -472,7 +551,8 @@ export function nodeMove({vect, user, modify_read, delete_read, create_read}) {
       }),
       body: JSON.stringify(params),
     })
-    .then(resolveFetch(dispatch));
+    .then(resolveFetch(dispatch))
+    .catch(resolveError(dispatch));
   };
 }
 

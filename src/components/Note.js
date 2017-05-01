@@ -43,8 +43,8 @@ function Note1(props) {
         float: 'left',
         clear: 'both',
         position: listed ? 'static' : 'absolute',
-        left: pres.properties.vect[1],
-        top: pres.properties.vect[2],
+        left: pres.properties.v[1],
+        top: pres.properties.v[2],
         margin: 2,
         opacity: dragged ? 0.5 : 1,
     }}>

@@ -3,9 +3,9 @@ import React from 'react';
 import { PropTypes } from 'prop-types';
 
 import { connect } from 'react-redux';
-import { edit } from '../actions';
+import { userEdit } from '../actions';
 
-class UserEditorEmail extends React.Component {
+class UserSignor extends React.Component {
   constructor(props) {
     super(props);
 
@@ -23,7 +23,7 @@ class UserEditorEmail extends React.Component {
     const { getVect, user, dispatch, reset } = this.props;
     const { email } = this.state;
 
-    dispatch(edit({
+    dispatch(userEdit({
       vect: getVect(),
       user,
       email,
@@ -43,7 +43,7 @@ class UserEditorEmail extends React.Component {
     const { email } = this.state;
 
     return (
-      <div id='userEditorEmail' style={{}}>
+      <div id='userSignor' style={{}}>
         <div>
           <input className='name item' 
             type='text'
@@ -67,11 +67,11 @@ class UserEditorEmail extends React.Component {
   }
 }
 
-UserEditorEmail.propTypes = {
+UserSignor.propTypes = {
   getVect: PropTypes.func.isRequired,
   user: PropTypes.object.isRequired,
   reset: PropTypes.func.isRequired,
   dispatch: PropTypes.func,
 };
 
-export const UserEditorEmail_Out = connect()(UserEditorEmail);
+export const UserSignor_Out = connect()(UserSignor);

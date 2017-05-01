@@ -1,8 +1,9 @@
 import { PropTypes } from 'prop-types';
 
 import { UserVector } from './UserVector';
-import { UserRegistor_Out } from './UserRegistor_Out';
 import { UserLoginor_Out } from './UserLoginor_Out';
+import { UserLogoutor_Out } from './UserLogoutor_Out';
+import { UserSignor_Out } from './UserSignor_Out';
 
 import { NodeHidor_Out } from './NodeHidor_Out';
 import { NodeCommitor_Out } from './NodeCommitor_Out';
@@ -48,7 +49,8 @@ export function Dashboard(props) {
           }}>
             USER
             <UserVector getVect={getVect} />
-            <UserRegistor_Out getVect={getVect} user={user} />
+            <UserLogoutor_Out getVect={getVect} user={user} />
+            <UserSignor_Out getVect={getVect} user={user} />
             <UserLoginor_Out getVect={getVect} user={user} />
           </div>
           {

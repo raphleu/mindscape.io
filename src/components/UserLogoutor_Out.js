@@ -5,6 +5,9 @@ import { PropTypes } from 'prop-types';
 import { connect } from 'react-redux';
 import { logout } from '../actions';
 
+import * as firebase from 'firebase/app';
+import 'firebase/auth';
+
 class UserLogoutor extends React.Component {
   constructor(props) {
     super(props);
@@ -33,6 +36,8 @@ class UserLogoutor extends React.Component {
   dispatchLogout() { //dispatch
     const { getVect, dispatch } = this.props;
 
+    firebase.auth.signOut();
+    
     dispatch(logout({
       vect: getVect(),
     }));
@@ -52,7 +57,7 @@ class UserLogoutor extends React.Component {
               ? (
                 <div className='logoutment'>
                   <div>
-                    Are you sure you want to logging_out?
+                    Are you sure you want to log out?
                   </div>
                   <div className='logout-cancel button' onClick={this.resetLogout}>
                     <div className='content'>

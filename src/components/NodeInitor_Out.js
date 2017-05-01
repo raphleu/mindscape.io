@@ -17,7 +17,7 @@ class NodeInitor extends React.Component {
     const { getVect, user, path_press, in_defs, out_press, dispatch } = this.props;
 
     dispatch(nodeInit({
-      vect: getVect,
+      vect: getVect(),
       user,
       parent_path_press: path_press,
       parent_out_press: out_press,

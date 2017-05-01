@@ -12,14 +12,6 @@ class Notation extends React.Component {
     super(props);
   }
 
-  componentDidMount() {
-    const { getVect, dispatch } = this.props;
-
-    dispatch(resume({
-      vect: getVect(),
-    }));
-  }
-
   render() {
     const { getVect, user, root_pres, select_press, select_node } = this.props;
 
@@ -47,21 +39,25 @@ class Notation extends React.Component {
 
 Notation.propTypes = {
   getVect: PropTypes.func.isRequired,
+  auth_user: PropTypes.object,
   user: PropTypes.object,
   select_press: PropTypes.arrayOf(PropTypes.object), 
   select_node: PropTypes.object,
 };
 
 export const Notation_InOut = connect(state => {
-  const { user_id, node_by_id, link_by_id, link_by_id_by_start_id } = state;
+  const { auth_user, node_by_id, link_by_id, link_by_id_by_start_id } = state;
 
-  if (!user_id) {
+  if (auth_user == null) {
     return {
+      auth_user: null,
       user: null,
       select_press: [],
       select_node: null,
     };
   }
+
+  const user_id = auth_user.uid;
 
   let root_pres;
   Object.keys(link_by_id_by_start_id[user_id]).some(link_id => { 
@@ -93,6 +89,7 @@ export const Notation_InOut = connect(state => {
   }
 
   return {
+    auth_user,
     user: node_by_id[user_id],
     select_press,
     select_node,

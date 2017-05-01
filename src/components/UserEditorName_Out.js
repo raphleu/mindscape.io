@@ -3,7 +3,7 @@ import React from 'react';
 import { PropTypes } from 'prop-types';
 
 import { connect } from 'react-redux';
-import { edit } from '../actions';
+import { useEdit } from '../actions';
 
 class UserEditorName extends React.Component {
   constructor(props) {
@@ -23,7 +23,7 @@ class UserEditorName extends React.Component {
     const { getVect, user, dispatch, reset } = this.props;
     const { name } = this.state;
 
-    dispatch(edit({
+    dispatch(userEdit({
       vect: getVect(),
       user,
       name,

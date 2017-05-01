@@ -43,7 +43,7 @@ class NodeEditor extends React.Component {
 
     this.setState({
       editorState: editorState,
-      edit_timer_id: setTimeout(this.dispatchEdit, 10000), // autosave edits every 10 sec
+      //edit_timer_id: setTimeout(this.dispatchEdit, 10000), // autosave edits every 10 sec
     });
   }
 
@@ -51,12 +51,13 @@ class NodeEditor extends React.Component {
     const { getVect, node, dispatch } = this.props;
     const { editorState } = this.state;
 
-    dispatch(nodeEdit({
+    /*dispatch(nodeEdit({
       vect: getVect(),
       node: Object.assign({}, node, {
         editorState,
       }),
-    }));
+    }));*/
+    console.log('dispatch edit!');
 
     this.setState({
       edit_timer_id: null,

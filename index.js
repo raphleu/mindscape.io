@@ -1,17 +1,23 @@
+const mindscape = require('./services/index.js');
+
 const express = require('express');
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
-
-const session = require('express-session');
-const RedisStore = require('connect-redis')(session);
 
 const neo4j = require('neo4j-driver').v1;
 
 const path = require('path');
 const uuid = require('uuid/v4');
 
-const service = require('./services/index.js')();
+const admin = require('firebase-admin');
+const serviceAccount = require('./mindscape-868a8-firebase-adminsdk-su4ar-98c60a3e56.json')
 
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "https://mindscape-868a8.firebaseio.com"
+});
+
+const service = mindscape();
 const server = express();
 
 server.set('port', (process.env.PORT || 3000));
@@ -23,6 +29,9 @@ server.use(bodyParser.json());
 
 server.use(express.static(path.join(__dirname, 'dist'))); 
 
+/*
+const session = require('express-session');
+const RedisStore = require('connect-redis')(session);
 
 const store_options = {
   logErrors: true,
@@ -49,11 +58,11 @@ if (server.get('env') === 'production') {
   session_options.cookie.secure = true // serve secure cookies
 }
 server.use(session(session_options));
+*/
 
 function respond(callback) {
   return (req, res) => {
-    return Promise.resolve(callback(req, res))
-    .then(data => {
+    return Promise.resolve(callback(req, res)).then(data => {
       if (data.error) {
         console.log(data.error);
         res.status(400).json({data});
@@ -61,8 +70,7 @@ function respond(callback) {
       else {
         res.status(200).json({data});
       }
-    })
-    .catch(error => {
+    }).catch(error => {
       console.error(error);
       res.status(500).json({data: err});
     });
@@ -91,149 +99,124 @@ const { host, user, pass } = neo4j_configs['my_graphenedb'];
 const neo4j_driver = neo4j.driver(host, neo4j.auth.basic(user, pass));
 
 server.post('/api/register', respond((req, res) => {
-  const { user_id } = req.session;
-  const { vect } = req.body;
-
   console.log('register');
+  const { token, vect } = req.body;
 
-  const session = neo4j_driver.session();
-  const tx = session.beginTransaction();
+  return admin.auth().verifyIdToken(token).then(decodedToken => {
+    const user_id = decodedToken.uid;
 
-  return Promise.resolve(user_id)
-    .then(user_id => {
-      if (user_id != null) {
-        return service.logout({tx, user_id, vect});  
-      }
-      return {};
-    })
-    .then(() => {
-      return service.init({tx, vect})
-    })
-    .then(dish => {
-      tx.commit();
-      session.close();
-      
-      req.session.user_id = dish.user_id;
-      
-      return dish;
-    });
-}));
-
-server.post('/api/resume', respond((req, res) => {
-  const { user_id } = req.session;
-  const { vect } = req.body;
-
-  console.log('resume');
-
-  if (user_id != null) {
     const session = neo4j_driver.session();
     const tx = session.beginTransaction();
 
-    return service.get({tx, user_id, vect})
-      .then(dish => {
+    return service.seed({tx, user_id, vect}).then(dish => {
+      tx.commit();
+      session.close();
+      
+      return dish;
+    });
+  });
+}));
+
+server.post('/api/resume', respond((req, res) => {
+  console.log('resume');
+  const { token, vect } = req.body;
+
+  return admin.auth().verifyIdToken(token).then(decodedToken => {
+    const user_id = decodedToken.uid;
+
+    const session = neo4j_driver.session();
+    const tx = session.beginTransaction();
+
+    return service.get({tx, user_id, vect}).then(dish => {
+      tx.commit();
+      session.close();
+
+      return dish;
+    });
+  });
+}));
+
+server.post('/api/set', respond((req, res) => {
+  const { token, vect, node_by_id, link_by_id } = req.body;
+
+  console.log('set');
+
+  return admin.auth().verifyIdToken(token).then(decodedToken => {
+    const user_id = decodedToken.uid;
+
+    const session = neo4j_driver.session();
+    const tx = session.beginTransaction();
+
+    return service.set({tx, user_id, vect, node_by_id, link_by_id}).then(dish => {
+      tx.commit();
+      session.close();
+
+      return dish;
+    });
+  });
+}));
+
+server.post('/api/sign', respond((req, res) => {
+  const { token, vect, pass, edit_pass } = req.body;
+
+  console.log('sign');
+
+  return admin.auth().verifyIdToken(token).then(decodedToken => {
+    const user_id = decodedToken.uid;
+
+    const session = neo4j_driver.session();
+    const tx = session.beginTransaction();
+
+    return service.sign({tx, user_id, vect, pass, edit_pass}).then(dish => {
+      tx.commit();
+      session.close();
+
+      return dish;
+    });
+  });
+}));
+
+server.post('/api/logout', respond((req, res) => {
+  const { token, vect } = req.body;
+
+  console.log('logout');
+
+  return admin.auth().verifyIdToken(token).then(decodedToken => {
+    const user_id = decodedToken.uid;
+
+    const session = neo4j_driver.session();
+    const tx = session.beginTransaction();
+
+    return service.logout({tx, user_id, vect}).then(dish => {
+      tx.commit();
+      session.close();
+
+      req.session.user_id = null;
+      return dish;
+    });
+  });
+}));
+
+server.post('/api/login', respond((req, res) => {
+  const { vect, name, pass } = req.body;
+
+  console.log('login');
+
+  return admin.auth().verifyIdToken(token).then(decodedToken => {
+    const user_id = decodedToken.uid;
+
+    const session = neo4j_driver.session();
+    const tx = session.beginTransaction();
+
+    return service.login({vect, name, pass}).then(({ user_id }) => {
+      return service.get({user_id, vect}).then(dish => {
         tx.commit();
         session.close();
 
         return dish;
       });
-  }
-  else {
-    return {};
-  }
-}));
-
-server.post('/api/set', respond((req, res) => {
-  const { user_id } = req.session;
-  const { vect, node_by_id, link_by_id } = req.body;
-
-  console.log('dish');
-
-  const session = neo4j_driver.session();
-  const tx = session.beginTransaction();
-
-  return service.set({tx, user_id, vect, node_by_id, link_by_id})
-    .then(dish => {
-      tx.commit();
-      session.close();
-
-      return dish;
     });
-}));
-
-server.post('/api/sign', respond((req, res) => {
-  const { user_id } = req.session;
-  const { vect, pass, edit_pass } = req.body;
-
-  console.log('sign');
-
-  const session = neo4j_driver.session();
-  const tx = session.beginTransaction();
-
-  return service.sign({tx, user_id, vect, pass, edit_pass})
-    .then(dish => {
-      tx.commit();
-      session.close();
-
-      return dish;
-    });
-}));
-
-server.post('/api/logout', respond((req, res) => {
-  const { user_id } = req.session;
-  const { vect } = req.body;
-
-  console.log('logout');
-
-  const session = neo4j_driver.session();
-  const tx = session.beginTransaction();
-
-  return service.logout({user_id, vect})
-    .then(dish => {
-      tx.commit();
-      session.close();
-
-      return dish;
-    });
-}));
-
-server.post('/api/login', respond((req, res) => {
-  const { user_id } = req.session;
-  const { vect, name, pass } = req.body;
-
-  console.log('login');
-
-  const session = neo4j_driver.session();
-  const tx = session.beginTransaction();
-
-  return Promise.resolve(user_id)
-    .then(user_id => {
-      if (user_id != null) {
-        return service.logout({user_id, vect});
-      }
-      return {};
-    })
-    .then(() => {
-      return service.login({vect, name, pass})
-        .then(({ user_id }) => {
-          if (user_id) {
-            req.session.user_id = user_id;
-
-            return service.get({user_id, vect})
-              .then(dish => {
-                tx.commit();
-                session.close();
-
-                return dish;
-              });
-          }
-          else {
-            tx.commit();
-            session.close();
-
-            return {}; // login failed
-          }
-        });
-    });
+  });
 }));
 
 server.listen(server.get('port'), () => {

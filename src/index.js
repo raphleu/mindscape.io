@@ -11,6 +11,22 @@ import { syncHistoryWithStore } from 'react-router-redux'
 
 //import { AppContainer } from 'react-hot-loader';
 import { App } from './components/App';
+
+import * as firebase from 'firebase/app';
+import 'firebase/auth';
+
+// Initialize Firebase
+const config = {
+  apiKey: "AIzaSyBHOkv_5p_nQpA0Pvd55WK1Ep2dgswJKKk",
+  authDomain: "mindscape-868a8.firebaseapp.com",
+  databaseURL: "https://mindscape-868a8.firebaseio.com",
+  projectId: "mindscape-868a8",
+  storageBucket: "mindscape-868a8.appspot.com",
+  messagingSenderId: "797370840442"
+};
+
+firebase.initializeApp(config);
+
 /*
   sketch of App component hierarchy
   App
