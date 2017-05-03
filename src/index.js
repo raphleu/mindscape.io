@@ -27,21 +27,6 @@ const config = {
 
 firebase.initializeApp(config);
 
-/*
-  sketch of App component hierarchy
-  App
-    Main
-      Authentication
-    Notation
-      User
-        Dashboard
-        Note
-          Nucleus
-          Space
-            Note...
-      User...
-*/
-
 const logger = store => next => action => {
   console.group(action.type);
   console.info('dispatching', action);

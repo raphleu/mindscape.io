@@ -12,7 +12,7 @@ export class User extends React.Component {
   }
 
   render() {
-    console.log('User', this.props);
+    //console.log('User', this.props);
 
     const { getVect, user, select_press } = this.props;
     const style = {
@@ -37,8 +37,6 @@ export class User extends React.Component {
             borderTopRightRadius: 4,
             borderBottomLeftRadius: 4,
           }}>
-            <UserEditor getVect={getVect} user={user} />
-            <UserLogoutor_Out getVect={getVect} user={user} />
             <Note
               key={'note-'+root_pres.properties.end_id}
               getVect={getVect}
@@ -58,6 +56,7 @@ export class User extends React.Component {
 
 User.propTypes = {  
   getVect: PropTypes.func,
+  auth_user: PropTypes.object,
   user: PropTypes.object,
   select_press: PropTypes.arrayOf(PropTypes.object),
 };

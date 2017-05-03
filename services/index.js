@@ -15,44 +15,39 @@ module.exports = function() {
     login,
   };
 
-  function dishQuery({ tx, user_id, query, params }) {
+  function dishQuery({ tx, query, params }) {
     return new Promise((resolve, reject) => {
-      if (user_id == null) {
-        reject('user_id should not be null');
-      }
-      else {
-        const dish = {
-          user_id,
-          node_by_id: {},
-          link_by_id: {},
-        };
+      const dish = {
+        node_by_id: {},
+        link_by_id: {},
+      };
 
-        tx.run(query, params).subscribe({
-          onNext: record => {
-            record.forEach(val => {
-              if (val) {
-                if (val.labels) {
-                  dish.node_by_id[val.properties.id] = val;
-                }
-                else if (val.type) {
-                  dish.link_by_id[val.properties.id] = val;
-                }
+      tx.run(query, params).subscribe({
+        onNext: record => {
+          record.forEach(val => {
+            if (val) {
+              if (val.labels) {
+                dish.node_by_id[val.properties.id] = val;
               }
-            });
-          },
-          onCompleted: metadata => {
-            resolve(dish);
-          },
-          onError: error =>{
-            reject(error);
-          }
-        });
-      }
+              else if (val.type) {
+                dish.link_by_id[val.properties.id] = val;
+              }
+            }
+          });
+        },
+        onCompleted: metadata => {
+          console.log('dish', dish);
+          resolve(dish);
+        },
+        onError: error =>{
+          reject(error);
+        }
+      });
     });
   }
 
   function seed({ tx, user_id, vect }) {
-    console.log('seed', vect);
+    console.log('seed', user_id, vect);
 
     const root_id = uuid();
 
@@ -121,7 +116,7 @@ module.exports = function() {
         pres
     `;
 
-    return dishQuery({tx, user_id, query, params});
+    return dishQuery({tx, query, params});
   }
 
   function set({ tx, user_id, vect, node_by_id, link_by_id }) {
@@ -144,7 +139,6 @@ module.exports = function() {
       o_id: uuid(), // origin_id, used only for inital coordination on this database
     };
 
-    console.log
     const query = `
       MATCH (u:Node:User {id:{user_id}})
       SET u.set_v = {vect}
@@ -171,7 +165,7 @@ module.exports = function() {
             o.id = {o_id},
             o.user_id = {o_id},
             o.exp = 'Origin\nroot of the coordinate tree',
-            o.init_v = {vect}
+            o.init_v = {vect},
             o.edit_v = [],
             o.commit_v = [],
             o.hide_v = []
@@ -222,7 +216,7 @@ module.exports = function() {
           d.user_id = {user_id},
           d.in_index = NULL,
           d.out_index = NULL,
-          d.init_v = {vect}
+          d.init_v = {vect},
           d.select_v = [],
           d.edit_v = [],
           d.hide_v = []
@@ -252,11 +246,35 @@ module.exports = function() {
         u,
         node,
         link
-      MATCH
-        (n:Node {id:node.properties.id})-[n_l:DEFINE|PRESENT]-(n_n:Node),
-        (l_n1:Node)-[l:DEFINE|PRESENT {id:link.properties.id}]->(l_n2:Node),
-        (l_n1)-[l_n1_l:DEFINE|PRESENT]-(l_n1_n:Node),
-        (l_n2)-[l_n2_l:DEFINE|PRESENT]-(l_n2_n:Node)
+      OPTIONAL MATCH (n:Node {id:node.properties.id})
+      WITH
+        link,
+        n
+      OPTIONAL MATCH (n)-[n_l:DEFINE|PRESENT]-(n_l_n:Node)
+      WITH
+        link,
+        n,
+        n_l,
+        n_l_n
+      OPTIONAL MATCH (l_n1:Node)-[l:DEFINE|PRESENT {id:link.properties.id}]->(l_n2:Node)
+      WITH
+        n,
+        n_l,
+        n_l_n,
+        l,
+        l_n1,
+        l_n2
+      OPTIONAL MATCH (l_n1)-[l_n1_l:DEFINE|PRESENT]-(l_n1_l_n:Node)
+      WITH
+        n,
+        n_l,
+        n_l_n,
+        l,
+        l_n1,
+        l_n1_l,
+        l_n1_l_n,
+        l_n2
+      OPTIONAL MATCH (l_n2)-[l_n2_l:DEFINE|PRESENT]-(l_n2_l_n:Node)
       RETURN 
         n,
         n_l,
@@ -272,7 +290,7 @@ module.exports = function() {
 
     // TODO branch off traversing, need to load neighbors
     // TODO branch off coordinating, need to load coords
-    return dishQuery({tx, user_id, query, params});
+    return dishQuery({tx, query, params});
   }
 
   function get({ tx, user_id, vect }) {
@@ -296,77 +314,50 @@ module.exports = function() {
         n_l_n
     `;
 
-    return dishQuery({tx, user_id, query, params});
+    return dishQuery({tx, query, params});
   }
 
-  function sign({ tx, user_id, vect, pass, edit_pass }) {
-    console.log('sign', user_id, vect, pass, edit_pass);
+  function sign({ tx, user_id, vect, email, pass, google, facebook, twitter, github }) {
+    console.log('sign', user_id, vect, email);
 
-    return new Promise((resolve, reject) => {
-      if (user_id == null) {
-        reject('user_id should not be null');
-      }
-      else {
-        const params = {
-          user_id,
-        };
-        const query = `
-          MATCH (n:Node:User {id:{user_id}})
-          RETURN n
-        `;
+    const properties = {
+      id: user_id,
+    };
 
-        let user;
+    if (email) {
+      properties.email = email;
+      properties.email_v = vect;
+    }
+    if (pass) {
+      properties.pass = pass;
+      properties.pass_v = vect;
+    }
+    if (google) {
+      properties.google = google;
+      properties.google_v = vect;
+    }
+    if (facebook) {
+      properties.facebook = facebook;
+      properties.facebook_v = vect;
+    }
+    if (twitter) {
+      properties.twitter = twitter;
+      properties.twitter_v = vect;
+    }
+    if (github) {
+      properties.github = github;
+      properties.github_v = vect;
+    }
 
-        tx.run(query, params).subscribe({
-          onNext: record => {
-            user = record.get('n');
-          },
-          onCompleted: metadata => {
-            resolve(user);
-          },
-          onError: error => {
-            reject(error);
-          }
-        });
-      }
-    })
-    .then(user => {
-      return Promise.resolve(user.properties.hash)
-        .then(hash => {
-          if (hash == null) {
-            return true;
-          }
-          else {
-            return auth.comparePass({
-              hash,
-              pass,
-            });
-          }
-        })
-        .then(is_match => {
-          if (is_match) {
-            return auth.hashPass(edit_pass)
-              .then(hash => {
-                return set({
-                  tx,
-                  user_id,
-                  vect,
-                  node_by_id: {
-                    [user_id]: {
-                      properties: {
-                        hash,
-                      },
-                    },
-                  },
-                });
-              });
-          }
-          else {
-            return {
-              error: 'pass should match'
-            };
-          }
-        });
+    return set({
+      tx,
+      user_id,
+      vect,
+      node_by_id: {
+        [user_id]: {
+          properties,
+        },
+      },
     });
   }
 
@@ -390,80 +381,21 @@ module.exports = function() {
     });
   }
 
-  function login({ tx, vect, name, pass }) {
-    console.log('login', vect, name, pass);
-    return new Promise((resolve, reject) => {
-      const params = {
-        name,
-        pass,
-      };
-
-      const query = `
-        MATCH (n:Node:User {exp:{name}})
-        RETURN n
-      `;
-
-      let user_by_id = {};
-
-      tx.run(query, params).subscribe({
-        onNext: record => {
-          const user = record.get('n');
-
-          user_by_id[user.properties.id] = user;
-        },
-        onCompleted: metadata => {
-          resolve(user_by_id);
-        },
-        onError: error => {
-          reject(error);
-        },
-      });
-    })
-    .then(user_by_id => {
-      const users = Object.keys(user_by_id).map(user_id => {
-        return new Promise((resolve, reject) => {
-          const user = user_by_id[user_id];
-
-          if (user.properties.hash == null) {
-            resolve(user);
-          }
-          else {
-            auth.comparePass({
-              hash: user.properties.hash,
-              pass,
-            })
-            .then(is_match => {
-              if (is_match) {
-                resolve(user);
-              }
-              else {
-                resolve(null);
-              }
-            });
-          }
-        });
-      });
-
-      Promise.all(users)
-      .then(users => {
-        const permitted_users = users.filter(user => (user != null));
-
-        const user = permitted_users[Math.floor(Math.random() * permitted_users.length)];
-
-        return set({
-          tx,
-          user_id: user.properties.id,
-          vect,
-          node_by_id: {
-            [user_id]: {
-              properties: {
-                login_v: vect,
-              },
-            },
+  function login({ tx, user_id, vect }) {
+    return set({
+      tx,
+      user_id,
+      vect,
+      node_by_id: {
+        [user_id]: {
+          properties: {
+            id: user_id,
+            login_v: vect,
           },
-        });
-      });
+        },
+      },
+    }).then(() => {
+      return get({tx, user_id, vect});
     });
   }
 }
-

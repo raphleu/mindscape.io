@@ -5,9 +5,6 @@ import { PropTypes } from 'prop-types';
 import { connect } from 'react-redux';
 import { logout } from '../actions';
 
-import * as firebase from 'firebase/app';
-import 'firebase/auth';
-
 class UserLogoutor extends React.Component {
   constructor(props) {
     super(props);
@@ -16,78 +13,94 @@ class UserLogoutor extends React.Component {
       logging_out: false,
     };
 
-    this.startLogout = this.startLogout.bind(this);
-    this.resetLogout = this.resetLogout.bind(this);
+    this.start = this.start.bind(this);
+    this.reset = this.reset.bind(this);
     this.dispatchLogout = this.dispatchLogout.bind(this);
   }
 
-  startLogout() { //propose
+  start() { //propose
     this.setState({
       logging_out: true
     });
   }
 
-  resetLogout() {
+  reset() {
     this.setState({
       logging_out: false
     });
   }
 
   dispatchLogout() { //dispatch
-    const { getVect, dispatch } = this.props;
+    const { getVect, auth_user, dispatch } = this.props;
 
-    firebase.auth.signOut();
-    
     dispatch(logout({
+      auth_user,
       vect: getVect(),
     }));
 
-    this.resetLogout();
+    this.reset();
   }
 
   render() {
-    const { user } = this.props;
+    const { auth_user } = this.props;
     const { logging_out } = this.state;
 
-    return user 
-      ? (
-        <div id='user-logoutor'>
-          {
-            logging_out
-              ? (
-                <div className='logoutment'>
-                  <div>
-                    Are you sure you want to log out?
-                  </div>
-                  <div className='logout-cancel button' onClick={this.resetLogout}>
-                    <div className='content'>
-                      cancel
-                    </div>
-                  </div>
-                  <div className='logout-dispatch button' onClick={this.dispatchLogout}>
-                    <div className='content'>
-                      logout!
-                    </div>
-                  </div>
-                </div>
-              )
-              : (
-                <div className='logout-start button' onClick={this.startLogout}>
+    return (
+      <div id='user-logoutor' style={{
+        border: '1px solid lavender',
+        padding: 2,
+      }}>
+        {
+          logging_out
+            ? (
+              <div className='logout-confirm'>
+                LOGOUT
+                {
+                  auth_user.isAnonymous
+                    ? (
+                      <div>
+                        Are you sure you want to log out?
+                        If you don't link this user to an email or other identity provider,
+                        you will not be able to regain access!
+                      </div>
+                    )
+                    : (
+                      <div>
+                        Are you sure you want to log out?
+                      </div>
+                    )
+                }
+                <div className='dispatch button' onClick={this.dispatchLogout}>
                   <div className='content'>
-                    logout
+                    Logout!
                   </div>
                 </div>
-              )
-          }
-        </div>
-      )
-      : null;
+                <div className='cancel button' onClick={this.reset}>
+                  <div className='content'>
+                    Cancel
+                  </div>
+                </div>
+              </div>
+            )
+            : (
+              <div className='start button' onClick={this.start} style={{
+                margin: 2,
+                border: '1px solid lavender'
+              }}>
+                <div className='content'>
+                  Logout
+                </div>
+              </div>
+            )
+        }
+      </div>
+    );
   }
 }
 
 UserLogoutor.propTypes = {  
-  getVect: PropTypes.func,
-  user: PropTypes.object.isRequired,
+  getVect: PropTypes.func.isRequired,
+  auth_user: PropTypes.object,
 }
 
 export const UserLogoutor_Out = connect()(UserLogoutor)

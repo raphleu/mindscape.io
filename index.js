@@ -103,34 +103,14 @@ server.post('/api/register', respond((req, res) => {
   const { token, vect } = req.body;
 
   return admin.auth().verifyIdToken(token).then(decodedToken => {
-    const user_id = decodedToken.uid;
-
     const session = neo4j_driver.session();
     const tx = session.beginTransaction();
+    const user_id = decodedToken.uid;
 
     return service.seed({tx, user_id, vect}).then(dish => {
       tx.commit();
       session.close();
       
-      return dish;
-    });
-  });
-}));
-
-server.post('/api/resume', respond((req, res) => {
-  console.log('resume');
-  const { token, vect } = req.body;
-
-  return admin.auth().verifyIdToken(token).then(decodedToken => {
-    const user_id = decodedToken.uid;
-
-    const session = neo4j_driver.session();
-    const tx = session.beginTransaction();
-
-    return service.get({tx, user_id, vect}).then(dish => {
-      tx.commit();
-      session.close();
-
       return dish;
     });
   });
@@ -156,18 +136,35 @@ server.post('/api/set', respond((req, res) => {
   });
 }));
 
-server.post('/api/sign', respond((req, res) => {
-  const { token, vect, pass, edit_pass } = req.body;
-
-  console.log('sign');
+server.post('/api/resume', respond((req, res) => {
+  console.log('resume');
+  const { token, vect } = req.body;
 
   return admin.auth().verifyIdToken(token).then(decodedToken => {
-    const user_id = decodedToken.uid;
-
     const session = neo4j_driver.session();
     const tx = session.beginTransaction();
+    const user_id = decodedToken.uid;
 
-    return service.sign({tx, user_id, vect, pass, edit_pass}).then(dish => {
+    return service.get({tx, user_id, vect}).then(dish => {
+      tx.commit();
+      session.close();
+
+      return dish;
+    });
+  });
+}));
+
+
+server.post('/api/sign', respond((req, res) => {
+  console.log('sign');
+  const { token, vect, email, pass, google, facebook, twitter, github } = req.body;
+
+  return admin.auth().verifyIdToken(token).then(decodedToken => {
+    const session = neo4j_driver.session();
+    const tx = session.beginTransaction();
+    const user_id = decodedToken.uid;
+
+    return service.sign({tx, user_id, vect, email, pass, google, facebook, twitter, github }).then(dish => {
       tx.commit();
       session.close();
 
@@ -177,44 +174,37 @@ server.post('/api/sign', respond((req, res) => {
 }));
 
 server.post('/api/logout', respond((req, res) => {
+  console.log('logout');
   const { token, vect } = req.body;
 
-  console.log('logout');
-
   return admin.auth().verifyIdToken(token).then(decodedToken => {
-    const user_id = decodedToken.uid;
-
     const session = neo4j_driver.session();
     const tx = session.beginTransaction();
+    const user_id = decodedToken.uid;
 
     return service.logout({tx, user_id, vect}).then(dish => {
       tx.commit();
       session.close();
 
-      req.session.user_id = null;
       return dish;
     });
   });
 }));
 
 server.post('/api/login', respond((req, res) => {
-  const { vect, name, pass } = req.body;
-
   console.log('login');
+  const { vect, token } = req.body;
 
   return admin.auth().verifyIdToken(token).then(decodedToken => {
-    const user_id = decodedToken.uid;
-
     const session = neo4j_driver.session();
     const tx = session.beginTransaction();
+    const user_id = decodedToken.uid;
 
-    return service.login({vect, name, pass}).then(({ user_id }) => {
-      return service.get({user_id, vect}).then(dish => {
-        tx.commit();
-        session.close();
+    return service.login({tx, user_id, vect}).then(dish => {
+      tx.commit();
+      session.close();
 
-        return dish;
-      });
+      return dish;
     });
   });
 }));

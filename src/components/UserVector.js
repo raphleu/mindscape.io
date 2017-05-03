@@ -6,7 +6,7 @@ export class UserVector extends React.Component {
     super(props);
 
     const { getVect } = props;
-    
+
     this.state = {
       vect: getVect(),
       timer_id: null,
@@ -41,7 +41,10 @@ export class UserVector extends React.Component {
     const space = vect.slice(1);
 
     return (
-      <div id='userVector'>
+      <div id='userVector' style={{
+        border: '1px solid lavender',
+        padding: 2,
+      }}>
         <div id='time'>
           { time.toString() }
         </div>

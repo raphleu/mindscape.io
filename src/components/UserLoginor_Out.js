@@ -3,7 +3,10 @@ import React from 'react';
 import { PropTypes } from 'prop-types';
 
 import { connect } from 'react-redux';
-import { login } from '../actions';
+import { authLogin, login } from '../actions';
+
+import * as firebase from 'firebase/app';
+import 'firebase/auth';
 
 class UserLoginor extends React.Component {
   constructor(props) {
@@ -11,48 +14,63 @@ class UserLoginor extends React.Component {
 
     this.state = {
       logging_in: false,
-      name: '',
+      email: '',
       pass: '',
-    }
+    };
 
-    this.startLogin = this.startLogin.bind(this);
-    this.resetLogin = this.resetLogin.bind(this);
-    this.dispatchLogin = this.dispatchLogin.bind(this);
+    this.start = this.start.bind(this);
+    this.reset = this.reset.bind(this);
 
-    this.handleNameChange = this.handleNameChange.bind(this);
+    this.loginWithEmailAndPass = this.loginWithEmailAndPass.bind(this);
+    this.handleEmailChange = this.handleEmailChange.bind(this);
     this.handlePassChange = this.handlePassChange.bind(this);
+
+    this.getLoginWithProvider = this.getLoginWithProvider.bind(this);
+    this.googleAuthProvider = new firebase.auth.GoogleAuthProvider();
+    this.facebookAuthProvider = new firebase.auth.FacebookAuthProvider(); 
   }
 
-  startLogin() {
+  start() {
     this.setState({
       logging_in: true
     });
   }
 
-  resetLogin() {
+  reset() {
     this.setState({
       logging_in: false,
-      name: '',
+      email: '',
       pass: '',
     });
   }
 
-  dispatchLogin() {
+  loginWithEmailAndPass() {
     const { getVect, dispatch } = this.props;
-    const { name, pass } = this.state;
+    const { email, pass } = this.state;
 
-    dispatch(login({
-      vect: getVect(), 
-      name,
+    const vect = getVect();
+
+    dispatch(authLogin({
+      vect,
+      email,
       pass,
     }));
 
-    this.resetLogin();
+    firebase.auth().signInWithEmailAndPassword(email, pass).then(auth_user => {
+      dispatch(login({
+        vect,
+        auth_user,
+      }));
+
+      this.reset();
+    }).catch(error => {
+      console.error(error.code, error.message);
+    });
   }
 
-  handleNameChange(event) {
+  handleEmailChange(event) {
     this.setState({
-      name: event.target.value
+      email: event.target.value
     });
   }
 
@@ -62,47 +80,114 @@ class UserLoginor extends React.Component {
     });
   }
 
+  getLoginWithProvider(provider) {
+    return () => {
+      const { getVect, dispatch } = this.props;
+
+      const vect = getVect();
+
+      dispatch(authLogin({
+        vect,
+        provider,
+      }));
+
+      firebase.auth().signInWithPopup(provider).then(result => {
+        const auth_user = result.user;
+
+        dispatch(login({
+          vect,
+          auth_user,
+        }));
+
+        this.reset();
+      }).catch(error => {
+        console.error(error.code, error.message);
+      });
+    };
+  }
+
   render() {
-    const { user } = this.props;
-    const { logging_in, name, pass } = this.state;
+    const { auth_user, user } = this.props;
+    const { logging_in, email, pass } = this.state;
 
     return (
-      <div id='user-loginor' style={{}}>
+      <div className='UserLoginor' style={{
+        border: '1px solid lavender',
+        padding: 2,
+      }}>
         {
           logging_in 
             ? (
-              <div className='loginment'>
-                {
-                  user ? 'you will be logged out when you log into a new user!' : 'name and password plz'
-                }
-                <input className='login-name item' 
-                  type='text'
-                  value={name}
-                  onChange={this.handleNameChange}
-                  placeholder={'name'}
-                />
-                <input className='login-pass item'
-                  type='password'
-                  value={pass}
-                  onChange={this.handlePassChange}
-                  placeholder={'pass'}
-                />
-                <div className='login-cancel button' onClick={this.resetLogin}>
-                  <div className='content'>
-                    cancel
+              <div className='login'>
+                LOGIN
+                <div style={{
+                  margin: 2,
+                  border: '1px solid lavender',
+                }}>
+                  GOOGLE
+                  <div className='dispatch button' onClick={this.getLoginWithProvider(this.googleAuthProvider)} style={{
+                    margin: 2,
+                    border: '1px solid lavender',
+                  }}>
+                    <div className='content'>
+                      Login!
+                    </div>
                   </div>
                 </div>
-                <div className='login-dispatch button' onClick={this.dispatchLogin}>
+                <div style={{
+                  margin: 2,
+                  border: '1px solid lavender',
+                  padding: 2,
+                }}>
+                  FACEBOOK
+                  <div className='dispatch button' onClick={this.getLoginWithProvider(this.facebookAuthProvider)} style={{
+                    margin: 2,
+                    border: '1px solid lavender',
+                  }}>
+                    <div className='content'>
+                      Login!
+                    </div>
+                  </div>
+                </div>
+                <div className='login-with-email-and-pass'>
+                  EMAIL/PASS
+                  <div>
+                    <input className='login-email item' 
+                      type='text'
+                      value={email}
+                      onChange={this.handleEmailChange}
+                      placeholder={'email'}
+                    />
+                    <input className='login-pass item'
+                      type='password'
+                      value={pass}
+                      onChange={this.handlePassChange}
+                      placeholder={'pass'}
+                    />
+                  </div>
+                  <div className='dispatch button' onClick={this.loginWithEmailAndPass}>
+                    <div className='content'>
+                      Login!
+                    </div>
+                  </div>
+                </div>
+                <div className='login-cancel button' onClick={this.reset} style={{
+                  margin: 2,
+                  border: '1px solid lavender',
+                }}>
                   <div className='content'>
-                    login!
+                    Cancel
                   </div>
                 </div>
               </div>
             )
             : (
-              <div className='login-start button' onClick={this.startLogin}>
+              <div className='start button' onClick={this.start} style={{
+                margin: 2,
+                border: '1px solid lavender'
+              }}>
                 <div className='content'>
-                  login!
+                  Login
                 </div>
               </div>
             )
@@ -113,8 +198,8 @@ class UserLoginor extends React.Component {
 }
 
 UserLoginor.propTypes = {
-  getVect: PropTypes.func,
-  user: PropTypes.object,
+  getVect: PropTypes.func.isRequired,
+  dispatch: PropTypes.func,
 };
 
 export const UserLoginor_Out = connect()(UserLoginor);

@@ -13,7 +13,7 @@ class Notation extends React.Component {
   }
 
   render() {
-    const { getVect, user, root_pres, select_press, select_node } = this.props;
+    const { getVect, auth_user, user, root_pres, select_press, select_node } = this.props;
 
     // sync up header and notation to use the same positioning strategy
     return (
@@ -23,6 +23,7 @@ class Notation extends React.Component {
       }}>
         <Dashboard
           getVect={getVect}
+          auth_user={auth_user}
           user={user}
           select_press={select_press}
           select_node={select_node}
@@ -48,16 +49,17 @@ Notation.propTypes = {
 export const Notation_InOut = connect(state => {
   const { auth_user, node_by_id, link_by_id, link_by_id_by_start_id } = state;
 
-  if (auth_user == null) {
+  const user_id = auth_user.uid;
+  const user = node_by_id[user_id];
+
+  if (user_id == null || user == null) {
     return {
-      auth_user: null,
-      user: null,
+      auth_user,
+      user,
       select_press: [],
       select_node: null,
     };
   }
-
-  const user_id = auth_user.uid;
 
   let root_pres;
   Object.keys(link_by_id_by_start_id[user_id]).some(link_id => { 
@@ -90,7 +92,7 @@ export const Notation_InOut = connect(state => {
 
   return {
     auth_user,
-    user: node_by_id[user_id],
+    user,
     select_press,
     select_node,
   };

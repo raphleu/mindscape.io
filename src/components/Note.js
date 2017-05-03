@@ -13,7 +13,7 @@ import { DragTypes } from '../types';
 import { flow } from 'lodash';
 
 function Note1(props) {
-  console.log('Note', props);
+  //console.log('Note', props);
   const {
     getVect,
     user,

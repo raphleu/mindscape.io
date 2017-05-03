@@ -40,9 +40,15 @@ function getExpFromNodeEditorState(node) {
   return node.editorState.getCurrentContent().getPlainText(); // TODO FIXME
 }
 
+// firebase auth 
 export const AUTH_INIT = 'AUTH_INIT';
+export const AUTH_REGISTER = 'AUTH_REGISTER';
+export const AUTH_SIGN = 'AUTH_SIGN';
+export const AUTH_LOGOUT = 'AUTH_LOGOUT';
+export const AUTH_LOGIN = 'AUTH_LOGIN';
+//
 export const AUTH_CHANGE = 'AUTH_CHANGE';
-
+// mindscape state
 export const FETCH_REGISTER = 'FETCH_REGISTER';
 export const FETCH_RESUME = 'FETCH_RESUME';
 
@@ -59,12 +65,32 @@ export const FETCH_NODE_SELECT = 'FETCH_NODE_SELECT';
 export const MOVE_NODE_FETCH = 'MOVE_NODE_FETCH';
 
 export const SET_FRAME_FETCH = 'SET_FRAME_FETCH';
-
+//
 export const ACCEPT_FETCH = 'ACCEPT_FETCH';
 export const REJECT_FETCH = 'REJECT_FETCH';
 
 // TODO init from local storage
 // TODO store state into local storage... on every change? by dispatching action from Notation?
+
+export function authChange({ auth_init, auth_user, vect }) {
+  return dispatch => {
+    dispatch({
+      type: AUTH_CHANGE,
+      payload: {
+        auth_init,
+        auth_user,
+        vect,
+      },
+    });
+
+    if (auth_init && auth_user) {
+      dispatch(resume({
+        auth_user,
+        vect,
+      }));
+    }
+  };
+}
 
 export function authInit({ vect }) {
   return {
@@ -75,31 +101,24 @@ export function authInit({ vect }) {
   };
 }
 
-export function authChange({ auth_init, auth_user, vect }) {
-  return dispatch => {
-    dispatch({
-      type: AUTH_CHANGE,
-      payload: {
-        auth_user,
-        vect,
-      },
-    });
-
-    if (auth_init) {
-      if (auth_user) {
-        dispatch(resume({
-          auth_user,
-          vect,
-        }));
-      }
-      else {
-        dispatch(register({
-          vect,
-        }));
-      }
-    }
+export function authSign({ vect }) {
+  return {
+    type: AUTH_SIGN,
+    payload: {
+      vect,
+    },
   };
 }
+
+export function authLogin({ vect }) {
+  return {
+    type: AUTH_LOGIN,
+    payload: {
+      vect,
+    },
+  };
+}
+
 
 export function register({ vect }) {
   return dispatch => {
@@ -132,7 +151,7 @@ export function register({ vect }) {
         }).then(resolveFetch(dispatch)).catch(resolveError(dispatch));
       });
     }).catch(error => {
-      console.error('auth error', error);
+      console.error('register auth error', error);
     });
   };
 }
@@ -161,82 +180,104 @@ export function resume({ auth_user, vect }) {
         body: JSON.stringify(params),
       }).then(resolveFetch(dispatch)).catch(resolveError(dispatch));
     }).catch(error => {
-      console.error('auth error', error);
+      console.error('resume auth error', error);
     });
   };
 }
 
-export function sign({ vect, pass, edit_pass }) {
+export function sign({ vect, auth_user, email, pass, google, facebook, twitter, github }) {
   return dispatch => {
-    const params = {
-      vect,
-      pass,
-      edit_pass,
-    };
+    auth_user.getToken(true).then(token => {
+      const params = {
+        vect,
+        token, 
+        email,
+        pass,
+        google,
+        facebook,
+        twitter,
+        github,
+      };
 
-    dispatch({
-      type: FETCH_SIGN,
-      payload: params,
+      dispatch({
+        type: FETCH_SIGN,
+        payload: params,
+      });
+
+      fetch('/api/sign', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: new Headers({
+          'Content-Type': 'application/json',
+        }),
+        body: JSON.stringify(params),
+      }).then(resolveFetch(dispatch)).catch(resolveError(dispatch));
     });
-
-    fetch('/api/sign', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: new Headers({
-        'Content-Type': 'application/json',
-      }),
-      body: JSON.stringify(params),
-    })
-    .then(resolveFetch(dispatch))
-    .catch(resolveError(dispatch));
-  }
+  };
 }
-
-export function logout({ vect }) {
+export function logout({ auth_user, vect }) {
   return dispatch => {
-    const params = {vect};
-
     dispatch({
-      type: FETCH_LOGOUT,
-      payload: params,
+      type: AUTH_LOGOUT,
+      payload: {
+        auth_user,
+        vect,
+      },
     });
 
-    fetch('/api/logout', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: new Headers({
-        'Content-Type': 'application/json',
-      }),
-      body: JSON.stringify(params),
-    })
-    .then(resolveFetch(dispatch))
-    .catch(resolveError(dispatch));
+    console.log('logout auth_user', auth_user);
+    console.log(auth_user.getToken);
+    auth_user.getToken(true).then(token => {
+      firebase.auth().signOut();
+
+      const params = {
+        token,
+        vect,
+      };
+
+      dispatch({
+        type: FETCH_LOGOUT,
+        payload: params,
+      });
+
+      fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: new Headers({
+          'Content-Type': 'application/json',
+        }),
+        body: JSON.stringify(params),
+      }).then(resolveFetch(dispatch)).catch(resolveError(dispatch));
+    }).catch(error => {
+      console.error('logout auth error', error);
+    });
   };
 }
 
-export function login({ vect, name, pass }) {
+export function login({ vect, auth_user }) {
   return dispatch => {
-    const params = {
-      vect,
-      name,
-      pass,
-    };
-    
-    dispatch({
-      type: FETCH_LOGIN,
-      payload: params,
-    });
+    auth_user.getToken(true).then(token => {
+      const params = {
+        token,
+        vect,
+      };
 
-    fetch('/api/login', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: new Headers({
-        'Content-Type': 'application/json',
-      }),
-      body: JSON.stringify(params),
-    })
-    .then(resolveFetch(dispatch))
-    .catch(resolveError(dispatch));
+      dispatch({
+        type: FETCH_LOGIN,
+        payload: params,
+      });
+
+      fetch('/api/login', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: new Headers({
+          'Content-Type': 'application/json',
+        }),
+        body: JSON.stringify(params),
+      }).then(resolveFetch(dispatch)).catch(resolveError(dispatch));
+    }).catch(error => {
+      console.error('resume auth error', error);
+    });
   };
 }
 

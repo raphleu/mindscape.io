@@ -1,6 +1,7 @@
 import { PropTypes } from 'prop-types';
 
 import { UserVector } from './UserVector';
+import { UserRegistor_Out } from './UserRegistor_Out';
 import { UserLoginor_Out } from './UserLoginor_Out';
 import { UserLogoutor_Out } from './UserLogoutor_Out';
 import { UserSignor_Out } from './UserSignor_Out';
@@ -11,7 +12,7 @@ import { NodeLinkor_InOut } from './NodeLinkor_InOut';
 
 export function Dashboard(props) {
   console.log('Dashboard', props);
-  const { getVect, user, select_press, select_node } = props;
+  const { getVect, auth_user, user, select_press, select_node } = props;
 
   return (
     <div id='dashboard' style={{
@@ -44,21 +45,39 @@ export function Dashboard(props) {
         }}>
           <div style={{
             margin: 2,
-            border: '1px solid lavender',
+            border: '1px solid darkorchid',
             padding: 2,
           }}>
             USER
             <UserVector getVect={getVect} />
-            <UserLogoutor_Out getVect={getVect} user={user} />
-            <UserSignor_Out getVect={getVect} user={user} />
-            <UserLoginor_Out getVect={getVect} user={user} />
+            <div>
+              { auth_user.uid }
+            </div>
+            <div>
+              { user && user.properties && user.properties.id }
+            </div>
+            {
+              auth_user.uid
+                ? (
+                  <div>
+                    <UserSignor_Out getVect={getVect} auth_user={auth_user} user={user} />
+                    <UserLogoutor_Out getVect={getVect} auth_user={auth_user} />
+                  </div>
+                )
+                : (
+                  <div>
+                    <UserRegistor_Out getVect={getVect} />
+                    <UserLoginor_Out getVect={getVect} />
+                  </div>
+                )
+            }
           </div>
           {
             select_node
               ? (
                 <div style={{
                   margin: 2,
-                  border: '1px solid lavender',
+                  border: '1px solid darkturquoise',
                   padding: 2,
                 }}>
                   SELECT
@@ -86,6 +105,7 @@ export function Dashboard(props) {
 
 Dashboard.propTypes = {
   getVect: PropTypes.func,
+  auth_user: PropTypes.object,
   user: PropTypes.object,
   root_pres: PropTypes.object,
   select_press: PropTypes.arrayOf(PropTypes.object), 

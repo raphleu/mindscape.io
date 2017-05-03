@@ -1,6 +1,11 @@
 import {
-  AUTH_INIT,
   AUTH_CHANGE,
+  AUTH_INIT,
+  AUTH_REGISTER,
+  AUTH_SIGN,
+  AUTH_LOGOUT,
+  AUTH_LOGIN,
+  //
   FETCH_RESUME,
   //
   FETCH_REGISTER,
@@ -25,8 +30,16 @@ import { routerReducer as routing } from 'react-router-redux';
 
 function fetching(state = false, action) {
   switch (action.type) {
+    // firebase auth
     case AUTH_INIT:
-    //
+    case AUTH_REGISTER:
+    case AUTH_SIGN:
+    case AUTH_LOGOUT:
+    case AUTH_LOGIN:
+      return true;
+    case AUTH_CHANGE:
+      return false;
+    // mindscape state
     case FETCH_REGISTER:
     case FETCH_RESUME:
     //
@@ -42,10 +55,6 @@ function fetching(state = false, action) {
     case FETCH_NODE_SELECT:
     case MOVE_NODE_FETCH:
       return true;
-    //
-    //
-    case AUTH_CHANGE:
-    //
     case ACCEPT_FETCH:
     case REJECT_FETCH:
       return false;
@@ -103,7 +112,6 @@ function links(state = empty_links, action) {
     //
     case ACCEPT_FETCH:
       return Object.keys(action.payload.link_by_id || {}).reduce((state, link_id) => {
-        console.log(state);
         const link = Object.assign({}, state.link_by_id[link_id], action.payload.link_by_id[link_id]);
         return {
           link_by_id: Object.assign({}, state.link_by_id, {
@@ -127,7 +135,6 @@ function links(state = empty_links, action) {
 }
 
 export function rootReducer(state = empty_links, action) {
-  console.log('rootReducer', state);
   const { link_by_id, link_by_id_by_start_id, link_by_id_by_end_id } = links({
     link_by_id: state.link_by_id,
     link_by_id_by_start_id: state.link_by_id_by_start_id,
@@ -138,7 +145,7 @@ export function rootReducer(state = empty_links, action) {
     routing: routing(state.routing, action),
     fetching: fetching(state.fetching, action),
     //
-    user_id: user_id(state.user_id, action),
+    auth_user: auth_user(state.auth_user, action),
     //
     node_by_id: node_by_id(state.node_by_id, action),
     link_by_id,

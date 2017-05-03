@@ -91,7 +91,7 @@ class Main extends React.Component {
     const { vect } = this.state;
 
     this.setState({
-      auth_state_unsubscribe: firebase.auth().onAuthStateChanged(this.handleAuthStateChange),
+      auth_state_unsubscribe: firebase.auth().onAuthStateChanged(this.handleAuthChange),
       timer_id: setInterval(this.setVectTime, 200),
       spacer_id: navigator.geolocation
         ? navigator.geolocation.watchPosition(this.setVectSpace)
