@@ -4,13 +4,12 @@ body {
 }
 
 .item {
-  margin: 2px
+  margin: 2px;
   border: 1px solid lavender;
   padding: 2px;
 }
 
-.button {
-  margin: 2px;
+button {
   cursor: pointer;
 }
 
@@ -19,4 +18,3 @@ body {
   padding: 2px;
   background-color: white;
 }
-

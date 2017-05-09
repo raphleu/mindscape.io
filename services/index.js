@@ -10,9 +10,8 @@ module.exports = function() {
     seed,
     set,
     get,
-    sign,
-    logout,
     login,
+    logout,
   };
 
   function dishQuery({ tx, query, params }) {
@@ -46,7 +45,7 @@ module.exports = function() {
     });
   }
 
-  function seed({ tx, user_id, vect }) {
+  function seed({ tx, user_id, vect, google, facebook, pass }) {
     console.log('seed', user_id, vect);
 
     const root_id = uuid();
@@ -60,6 +59,9 @@ module.exports = function() {
         edit_v: [],
         commit_v: [],
         hide_v: [],
+        google,
+        facebook,
+        pass,
       },
       root: {
         id: root_id,
@@ -73,10 +75,10 @@ module.exports = function() {
       def: {
         id: uuid(),
         user_id,
-        end_id: user_id,
-        in_index: 0,
         start_id: root_id,
         out_index: 0,
+        end_id: user_id,
+        in_index: 0,
         init_v: vect,
         edit_v: [],
         select_v: [],
@@ -102,7 +104,9 @@ module.exports = function() {
 
     const query = `
       CREATE
-        (user:Node:User)<-[def:DEFINE]-(root:Node:Root),
+        (user:Node:User),
+        (root:Node:Root),
+        (user)-[def:DEFINE]->(root),
         (user)-[pres:PRESENT]->(root)
       SET
         user = {user},
@@ -148,6 +152,7 @@ module.exports = function() {
       ON CREATE SET
         n.user_id = {user_id},
         n.exp = '',
+        n.raw = NULL,
         n.init_v = {vect},
         n.edit_v = [],
         n.commit_v = [],
@@ -170,7 +175,7 @@ module.exports = function() {
             o.commit_v = [],
             o.hide_v = []
           FOREACH (i IN range(0, length(node.coords)) |
-            MERGE (o)<-[d_oc:DEFINE]-(c:Node:Coord {i:i, exp:node.coords[i]['exp']})
+            MERGE (o)-[d_oc:DEFINE]->(c:Node:Coord {i:i, exp:node.coords[i]['exp']})
             ON CREATE SET
               c.id = node.coords[i]['node_id'],
               c.user_id = o.id,
@@ -188,14 +193,14 @@ module.exports = function() {
               d_oc.select_v = [],
               d_oc.edit_v = [],
               d_oc.hide_v = []
-            CREATE (c)<-[d_cn:DEFINE]-(n)
+            CREATE (c)-[d_cn:DEFINE]->(n)
             SET
               d_cn.id = node.coords[i]['def_cn_id'],
               d_cn.user_id = o.id,
-              d_cn.end_id = c.id,
-              d_cn.in_index= NULL,
               d_cn.start_id = n.id,
               d_cn.out_index = NULL,
+              d_cn.end_id = c.id,
+              d_cn.in_index= NULL,
               d_cn.init_v = {vect},
               d_cn.select_v = [],
               d_cn.edit_v = [],
@@ -211,7 +216,7 @@ module.exports = function() {
         (start:Node {id: link.properties.start_id}),
         (end:Node {id: link.properties.end_id})
       FOREACH (is_def IN CASE WHEN link.type = 'DEFINE' THEN [1] ELSE [] END |
-        MERGE (end)<-[d:DEFINE {id:link.properties.id, start_id:link.properties.start_id, end_id:link.properties.end_id}]-(start)
+        MERGE (start)-[d:DEFINE {id:link.properties.id, start_id:link.properties.start_id, end_id:link.properties.end_id}]->(end)
         ON CREATE SET
           d.user_id = {user_id},
           d.in_index = NULL,
@@ -315,50 +320,6 @@ module.exports = function() {
     `;
 
     return dishQuery({tx, query, params});
-  }
-
-  function sign({ tx, user_id, vect, email, pass, google, facebook, twitter, github }) {
-    console.log('sign', user_id, vect, email);
-
-    const properties = {
-      id: user_id,
-    };
-
-    if (email) {
-      properties.email = email;
-      properties.email_v = vect;
-    }
-    if (pass) {
-      properties.pass = pass;
-      properties.pass_v = vect;
-    }
-    if (google) {
-      properties.google = google;
-      properties.google_v = vect;
-    }
-    if (facebook) {
-      properties.facebook = facebook;
-      properties.facebook_v = vect;
-    }
-    if (twitter) {
-      properties.twitter = twitter;
-      properties.twitter_v = vect;
-    }
-    if (github) {
-      properties.github = github;
-      properties.github_v = vect;
-    }
-
-    return set({
-      tx,
-      user_id,
-      vect,
-      node_by_id: {
-        [user_id]: {
-          properties,
-        },
-      },
-    });
   }
 
   function logout({ tx, user_id, vect }) {

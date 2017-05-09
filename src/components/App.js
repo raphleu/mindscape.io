@@ -3,8 +3,8 @@ import { PropTypes } from 'prop-types';
 
 import { Provider } from 'react-redux';
 import { Router, Route, IndexRoute } from 'react-router';
-import { Main_InOut } from './Main_InOut';
-import { Notation_InOut } from './Notation_InOut';
+import { Main_io } from './Main_io';
+import { Notation_i } from './Notation_i';
 
 //import styles from './App.css';
 
@@ -15,8 +15,8 @@ export function App(props) {
   return (
     <Provider store={store}>
       <Router history={history}>
-        <Route path="/" component={Main_InOut}>
-          <IndexRoute component={Notation_InOut} />
+        <Route path="/" component={Main_io}>
+          <IndexRoute component={Notation_i} />
         </Route>
       </Router>
     </Provider>

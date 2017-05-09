@@ -1,18 +1,14 @@
 import { PropTypes } from 'prop-types';
 
-import { UserVector } from './UserVector';
-import { UserRegistor_Out } from './UserRegistor_Out';
-import { UserLoginor_Out } from './UserLoginor_Out';
-import { UserLogoutor_Out } from './UserLogoutor_Out';
-import { UserSignor_Out } from './UserSignor_Out';
+import { UserVector_i } from './UserVector_i';
 
-import { NodeHidor_Out } from './NodeHidor_Out';
-import { NodeCommitor_Out } from './NodeCommitor_Out';
-import { NodeLinkor_InOut } from './NodeLinkor_InOut';
+import { NodeCommit_o } from './NodeCommit_o';
+import { NodeHide_o } from './NodeHide_o';
+import { NodeLink_io } from './NodeLink_io';
 
 export function Dashboard(props) {
   console.log('Dashboard', props);
-  const { getVect, auth_user, user, select_press, select_node } = props;
+  const { auth_user, user, select_press, select_node } = props;
 
   return (
     <div id='dashboard' style={{
@@ -49,45 +45,24 @@ export function Dashboard(props) {
             padding: 2,
           }}>
             USER
-            <UserVector getVect={getVect} />
+            <UserVector_i />
             <div>
               { auth_user.uid }
             </div>
             <div>
               { user && user.properties && user.properties.id }
             </div>
-            {
-              auth_user.uid
-                ? (
-                  <div>
-                    <UserSignor_Out getVect={getVect} auth_user={auth_user} user={user} />
-                    <UserLogoutor_Out getVect={getVect} auth_user={auth_user} />
-                  </div>
-                )
-                : (
-                  <div>
-                    <UserRegistor_Out getVect={getVect} />
-                    <UserLoginor_Out getVect={getVect} />
-                  </div>
-                )
-            }
           </div>
           {
             select_node
               ? (
-                <div style={{
-                  margin: 2,
-                  border: '1px solid darkturquoise',
-                  padding: 2,
-                }}>
+                <div className='item' style={{border: '1px solid darkturquoise'}}>
                   SELECT
-                  <NodeCommitor_Out
-                    getVect={getVect}
-                    node={select_node}
-                  />
+                  add init, edit? probably
+                  <NodeCommit_o user={user} node={select_node} />
+                  <NodeHide_o user={user} node={select_node} />
                   set add link cursor mode
-                  <NodeLinkor_InOut
-                    getVect={getVect}
+                  <NodeLink_io
                     user={user}
                     path_press={select_press}
                     node={select_node} 
@@ -104,10 +79,8 @@ export function Dashboard(props) {
 }
 
 Dashboard.propTypes = {
-  getVect: PropTypes.func,
   auth_user: PropTypes.object,
   user: PropTypes.object,
-  root_pres: PropTypes.object,
   select_press: PropTypes.arrayOf(PropTypes.object), 
   select_node: PropTypes.object,
 };

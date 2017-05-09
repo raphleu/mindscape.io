@@ -98,49 +98,11 @@ const neo4j_configs = {
 const { host, user, pass } = neo4j_configs['my_graphenedb'];
 const neo4j_driver = neo4j.driver(host, neo4j.auth.basic(user, pass));
 
-server.post('/api/register', respond((req, res) => {
-  console.log('register');
-  const { token, vect } = req.body;
-
-  return admin.auth().verifyIdToken(token).then(decodedToken => {
-    const session = neo4j_driver.session();
-    const tx = session.beginTransaction();
-    const user_id = decodedToken.uid;
-
-    return service.seed({tx, user_id, vect}).then(dish => {
-      tx.commit();
-      session.close();
-      
-      return dish;
-    });
-  });
-}));
-
-server.post('/api/set', respond((req, res) => {
-  const { token, vect, node_by_id, link_by_id } = req.body;
-
-  console.log('set');
-
-  return admin.auth().verifyIdToken(token).then(decodedToken => {
-    const user_id = decodedToken.uid;
-
-    const session = neo4j_driver.session();
-    const tx = session.beginTransaction();
-
-    return service.set({tx, user_id, vect, node_by_id, link_by_id}).then(dish => {
-      tx.commit();
-      session.close();
-
-      return dish;
-    });
-  });
-}));
-
 server.post('/api/resume', respond((req, res) => {
   console.log('resume');
-  const { token, vect } = req.body;
+  const { vect, auth_token } = req.body;
 
-  return admin.auth().verifyIdToken(token).then(decodedToken => {
+  return admin.auth().verifyIdToken(auth_token).then(decodedToken => {
     const session = neo4j_driver.session();
     const tx = session.beginTransaction();
     const user_id = decodedToken.uid;
@@ -154,30 +116,40 @@ server.post('/api/resume', respond((req, res) => {
   });
 }));
 
+server.post('/api/login', respond((req, res) => {
+  console.log('login');
+  const { vect, auth_token, google, facebook, pass } = req.body; // TODO use login details
 
-server.post('/api/sign', respond((req, res) => {
-  console.log('sign');
-  const { token, vect, email, pass, google, facebook, twitter, github } = req.body;
-
-  return admin.auth().verifyIdToken(token).then(decodedToken => {
+  return admin.auth().verifyIdToken(auth_token).then(decodedToken => {
     const session = neo4j_driver.session();
     const tx = session.beginTransaction();
     const user_id = decodedToken.uid;
 
-    return service.sign({tx, user_id, vect, email, pass, google, facebook, twitter, github }).then(dish => {
-      tx.commit();
-      session.close();
+    return service.login({tx, vect, user_id}).then(dish => {
+      if (dish) {
+        tx.commit();
+        session.close();
 
-      return dish;
+        return dish;
+      }
+      else {
+        // create new user
+        return service.seed({tx, vect, user_id, google, facebook, pass}).then(dish =>{
+          tx.commit();
+          session.close();
+
+          return dish;
+        });
+      }
     });
   });
 }));
 
 server.post('/api/logout', respond((req, res) => {
   console.log('logout');
-  const { token, vect } = req.body;
+  const { auth_token, vect } = req.body;
 
-  return admin.auth().verifyIdToken(token).then(decodedToken => {
+  return admin.auth().verifyIdToken(auth_token).then(decodedToken => {
     const session = neo4j_driver.session();
     const tx = session.beginTransaction();
     const user_id = decodedToken.uid;
@@ -191,16 +163,18 @@ server.post('/api/logout', respond((req, res) => {
   });
 }));
 
-server.post('/api/login', respond((req, res) => {
-  console.log('login');
-  const { vect, token } = req.body;
+server.post('/api/set', respond((req, res) => {
+  const { auth_token, vect, node_by_id, link_by_id } = req.body;
 
-  return admin.auth().verifyIdToken(token).then(decodedToken => {
-    const session = neo4j_driver.session();
-    const tx = session.beginTransaction();
+  console.log('set');
+
+  return admin.auth().verifyIdToken(auth_token).then(decodedToken => {
     const user_id = decodedToken.uid;
 
-    return service.login({tx, user_id, vect}).then(dish => {
+    const session = neo4j_driver.session();
+    const tx = session.beginTransaction();
+
+    return service.set({tx, user_id, vect, node_by_id, link_by_id}).then(dish => {
       tx.commit();
       session.close();
 

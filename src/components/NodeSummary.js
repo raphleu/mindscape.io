@@ -1,26 +1,19 @@
 export function NodeSummary(props) {
   const { user, node } = props;
 
-  const has_permission = (node.properties.user_id === user.properties.id);
+  const permitted = node.properties.user_id === user.properties.id;
 
   return (
-    <div className='nodeSummary'>
-      <div>
+    <div className='NodeSummary' style={{
+      margin: 2,
+      border: permitted ? '1px solid steelblue' : '1px solid lavender'
+    }}>
+      <div className='content'>
         <div>
-          id
+          { node.properties.id }
         </div>
         <div>
-          {
-            node.properties.id
-          }
-        </div>
-        <div>
-          exp
-        </div>
-        <div>
-          {
-            node.properties.exp.split('\n')[0]
-          }
+          { node.properties.exp }
         </div>
       </div>
     </div> 

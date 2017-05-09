@@ -1,5 +1,5 @@
 import React from 'react';
-import { NodeSelector_Out } from './NodeSelector_Out';
+import { PresSelect_o } from './PresSelect_o';
 import { NodeSummary } from './NodeSummary';
 
 import { PropTypes } from 'prop-types';
@@ -18,10 +18,9 @@ class PresSummary extends React.Component {
     console.log('click');
     event.stopPropagation();
 
-    const { getVect, user, path_press, node, dispatch } = this.props;
+    const { user, path_press, node, dispatch } = this.props;
 
     dispatch(selectPresSummary({
-      getVect,
       user,
       path_press,
       node,
@@ -29,14 +28,14 @@ class PresSummary extends React.Component {
   };
 
   render() {
-    const { getVect, user, path_press, node, def, partner_path_press, partner_node, } = this.props;
+    const { user, path_press, node, def, partner_path_press, partner_node, } = this.props;
 
     const selected = false;
 
     const partner = (
-      <NodeSelector_Out getVect={getVect} path_press={partner_path_press}>
+      <PresSelect_o path_press={partner_path_press}>
         <NodeSummary user={user} node={partner_node} />
-      </NodeSelector_Out>
+      </PresSelect_o>
     );
 
     return (
@@ -103,7 +102,6 @@ class PresSummary extends React.Component {
 }
 
 PresSummary.propTypes = {
-  getVect: PropTypes.func.isRequired,
   user: PropTypes.object.isRequired,
   path_press: PropTypes.arrayOf(PropTypes.object).isRequired,
   node: PropTypes.object.isRequired,

@@ -1,6 +1,6 @@
 module.exports = (function() {
   const DragTypes = {
-    Note: 'Note',
+    Pres: 'Pres',
   };
 
   const NodeLabels = {
@@ -37,34 +37,34 @@ module.exports = (function() {
     DEFINE: {
       type: LinkTypes.DEFINE,
       properties: {
-        init_vect: [],
-        hide_vect: [],
-        select_vect: [],
-        edit_vect: [],
         id: '',
         start_id: '',
         out_index: 0,
         end_id: '',
         in_index: 0,
+        init_v: [],
+        hide_v: [],
+        select_v: [],
+        edit_v: [],
       }
     },
     PRESENT: {
       type: LinkTypes.PRESENT,
       properties: {
-        init_vect: [0, 0, 0, 0],
-        hide_vect: [],
-        select_vect: [],
-        edit_vect: [],
         id: '',
         user_id: '',
         start_id: '',
         out_index: 0,
-        list: true,
-        vect: [0, 0, 0, 0],
+        enlist: true,
+        v: [0, 0, 0, 0],
         end_id: '',
         in_index: 0,
-        present_: false,
-        present_list: false,
+        open: false,
+        list: false,
+        init_v: [0, 0, 0, 0],
+        hide_v: [],
+        select_v: [],
+        edit_v: [],
       }
     }
   }
