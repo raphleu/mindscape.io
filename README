@@ -1,6 +1,35 @@
+http://mindscape.io
+
+Post your notes in the form of a nested flowchart.
+
+(a nested flowchart) is a 4-tuple (P, p_0, F, N).
+  P is a finite set of posts.
+  p_0 is the start post, a member of P.
+  F is a finite set of flows, a subset of P x P,
+    where (P, F) is a connected directed graph rooted at p_0.
+  N is a finite set of nests, a subset of P x P,
+    where (P, N) is a connectd directed tree rooted at p_0.
+    
+  A post is a unit of user generated content, e.g. text, picture, audio, video, or hyperlink.
+  
+  A flow is an directed relationship between two posts; it is rendered as an arrow.
+    Flows should be used to form a search hierarchy rooted at p_0
+      (like a search tree, except a post can have multiple incoming flows).
+    A flow stores indices giving its ordering relative to the other flows (out from the source) and (in to the target).
+  
+  A nest is an directed relationship between two posts; it is rendered as the nesting of its target in its source. 
+    Nests should be used to form a search tree rooted at p_0.
+    A nest stores indices giving its ordering relative to the other flows (out from the source) and (in to the target).
+    A nest stores a vector describing the position of the target relative to the source.
+    A nest stores flags indicating whether the nested posts should be displayed as a list, or as a scatterplot.
+      Nested lists form the standard hierarchical outline format.
+      Nested scatterplots form nested flowcharts (like nested desktops).
+    You can think of the nest tree as a tree highlighted from the flow graph.
+      The nest tree can be redrawn from a post onwards based on the outgoing flows.
+    
+
 I want to put a file in more than one folder; the best way to visualize this is a directed graph with nesting.
 
-http://mindscape.io
 soon, also at http://dish.catering
 
 Build a hierarchy of notes in the shape of a satellite dish to represent yourself and catch signals!
