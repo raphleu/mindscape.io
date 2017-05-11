@@ -2,7 +2,7 @@
   "name": "mindscape.io",
   "version": "0.0.0",
   "description": "organize and share your notes!",
-  "main": "server.js",
+  "main": "index.js",
   "dependencies": {
     "babel-core": "^6.22.1",
     "babel-loader": "^6.2.10",
@@ -70,7 +70,10 @@
   },
   "keywords": [
     "notation",
-    "graphs"
+    "ontology",
+    "nested flowchart",
+    "nested directed graph",
+    "social media"
   ],
   "author": "Peter Wei",
   "bugs": {

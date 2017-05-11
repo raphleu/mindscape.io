@@ -27,7 +27,7 @@ server.use(morgan('dev')); // logger
 server.use(bodyParser.urlencoded({extended: true}));
 server.use(bodyParser.json());
 
-server.use(express.static(path.join(__dirname, 'dist'))); 
+server.use(express.static(path.join(__dirname, 'public'))); 
 
 /*
 const session = require('express-session');

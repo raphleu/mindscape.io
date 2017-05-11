@@ -25,13 +25,13 @@ module.exports = {
     filename: 'bundle.js',
     // the output bundle
 
-    path: resolve(__dirname, 'dist'),
+    path: resolve(__dirname, 'public'),
 
     publicPath: '/'
     // necessary for HMR to know where to load the hot update chunks
   },
 
-  context: resolve(__dirname, 'src'),
+  context: resolve(__dirname, 'lib'),
 
   devtool: 'source-map',
 
