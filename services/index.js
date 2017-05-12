@@ -1,4 +1,4 @@
-const { NodeLabels, LinkTypes } = require('../lib/types');
+const { NodeLabels, LinkTypes } = require('../src/types');
 const { auth } = require('./auth');
 
 const now = require('lodash').now;
