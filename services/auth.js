@@ -7,7 +7,7 @@ module.exports.authentication = (function() {
   };
 
   function hashPass(pass) {
-    return new Promsie((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const saltRounds = 10;
       bcrypt.hash(pass, saltRounds, (err, hash) => {
         if (err) {

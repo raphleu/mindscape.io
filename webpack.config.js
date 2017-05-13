@@ -1,5 +1,6 @@
-const { resolve } = require('path');
-const webpack = require('webpack');
+const 
+  { resolve } = require('path'),
+  webpack = require('webpack');
 
 //TODO add .babel.js extension to use es6 here
 

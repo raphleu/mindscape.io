@@ -1,8 +1,9 @@
-const { NodeLabels, LinkTypes } = require('../src/types');
-const { auth } = require('./auth');
+const 
+  { NodeLabels, LinkTypes } = require('../src/types'),
+  { auth } = require('./auth'),
 
-const now = require('lodash').now;
-const uuid = require('uuid/v4');
+  now = require('lodash').now,
+  uuid = require('uuid/v4');
 
 // neo4j graph database url
 module.exports = function() {

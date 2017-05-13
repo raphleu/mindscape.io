@@ -1,24 +1,46 @@
-const mindscape = require('./services/index.js');
+const 
+  mindscape = require('./services/index.js'),
 
-const express = require('express');
-const morgan = require('morgan');
-const bodyParser = require('body-parser');
+  express = require('express'),
+  morgan = require('morgan'),
+  bodyParser = require('body-parser'),
 
-const neo4j = require('neo4j-driver').v1;
+  neo4j = require('neo4j-driver').v1,
 
-const path = require('path');
-const uuid = require('uuid/v4');
+  path = require('path'),
+  uuid = require('uuid/v4'),
 
-const admin = require('firebase-admin');
-const serviceAccount = require('./mindscape-868a8-firebase-adminsdk-su4ar-98c60a3e56.json')
+  admin = require('firebase-admin'),
+  serviceAccount = require('./mindscape-868a8-firebase-adminsdk-su4ar-98c60a3e56.json'),
+
+  service = mindscape(),
+  server = express(),
+
+  neo4j_configs = {
+    process_env: {
+      host: process.env.GRAPHENEDB_BOLT_URL,
+      user: process.env.GRAPHENEDB_BOLT_USER,
+      pass: process.env.GRAPHENEDB_BOLT_PASSWORD,
+    },
+    my_graphenedb: {
+      host: 'bolt://hobby-giphgfjnbmnagbkepekepdnl.dbs.graphenedb.com:24786',
+      user: 'app56614688-dYRNeO',
+      pass: '6pQjlv4oiV5HXJBrqZp8',
+    },
+    local: {
+      host: 'bolt://localhost:7687',
+      user: 'neo4j',
+      pass: 'o4jw4lru5H!d3',
+    },
+  },// TODO: don't post this publicly, someone might mess with it-- but really no one cares right now, you don't even have any users man, so whatever-- but really, don't post it lol, maybe someone will look at your old commits and hack youuuuu; ok, i'll remember...
+
+  { host, user, pass } = neo4j_configs['my_graphenedb'],
+  neo4j_driver = neo4j.driver(host, neo4j.auth.basic(user, pass));
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   databaseURL: "https://mindscape-868a8.firebaseio.com"
 });
-
-const service = mindscape();
-const server = express();
 
 server.set('port', (process.env.PORT || 3000));
 
@@ -76,27 +98,6 @@ function respond(callback) {
     });
   };
 }
-
-const neo4j_configs = {
-  process_env: {
-    host: process.env.GRAPHENEDB_BOLT_URL,
-    user: process.env.GRAPHENEDB_BOLT_USER,
-    pass: process.env.GRAPHENEDB_BOLT_PASSWORD,
-  },
-  my_graphenedb: {
-    host: 'bolt://hobby-giphgfjnbmnagbkepekepdnl.dbs.graphenedb.com:24786',
-    user: 'app56614688-dYRNeO',
-    pass: '6pQjlv4oiV5HXJBrqZp8',
-  },
-  local: {
-    host: 'bolt://localhost:7687',
-    user: 'neo4j',
-    pass: 'o4jw4lru5H!d3',
-  },
-};// TODO: don't post this publicly, someone might mess with it-- but really no one cares right now, you don't even have any users man, so whatever-- but really, don't post it lol, maybe someone will look at your old commits and hack youuuuu; ok, i'll remember...
-
-const { host, user, pass } = neo4j_configs['my_graphenedb'];
-const neo4j_driver = neo4j.driver(host, neo4j.auth.basic(user, pass));
 
 server.post('/api/resume', respond((req, res) => {
   console.log('resume');
